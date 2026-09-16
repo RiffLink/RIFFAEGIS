@@ -94,4 +94,7 @@ npm run purge-test-data --all
 
 ## 📜 ライセンス (License)
 
-本ソフトウェアは [MIT License](LICENSE) のもとで公開されています。商用・非商用問わず、誰でも監査・利用・改変が可能です。
+本ソフトウェアは **[PolyForm Noncommercial License 1.0.0 (Source-Available)](LICENSE)** のもとで公開されています。
+
+- **セキュリティ監査・検証・学術・個人利用：** 無償で自由にコードを閲覧・検証・利用できます。
+- **商用利用（有償サービスの提供・販売等）：** RiffLink の明示的な商用ライセンス許諾が必要です。商用ライセンスのお問い合わせは `rifflink01@gmail.com` までお願いいたします。
