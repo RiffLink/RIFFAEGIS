@@ -467,7 +467,11 @@ export default function NewDocumentPage() {
         </div>
 
         {creationMode === "markdown" ? (
-          <ContractMarkdownEditor initialTitle={documentTitle} onPdfGenerated={handleMarkdownPdfGenerated} />
+          <ContractMarkdownEditor
+            initialTitle={documentTitle}
+            onPdfGenerated={handleMarkdownPdfGenerated}
+            onMarkdownChange={setContractMarkdown}
+          />
         ) : (
           <>
             {/* Dropzone */}

@@ -697,14 +697,14 @@ export default function SignatureSheetConfigurator({
                     className="w-full max-w-[620px] bg-white text-slate-900 rounded-lg p-6 sm:p-10 shadow-lg font-serif text-xs leading-relaxed relative border border-slate-300 flex flex-col justify-between"
                     style={{ minHeight: "680px" }}
                   >
-                    {/* Top: Actual Contract Content */}
+                    {/* Top: Actual Contract Content (No fake hardcoded text) */}
                     <div className="space-y-3 pb-5 select-none border-b border-dashed border-slate-300">
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-sans">
                         <span className="font-bold text-slate-700 truncate max-w-[280px]">
-                          {docTitle || "プロジェクト参加合意書"}（最終ページ末尾）
+                          {docTitle || "契約書"}（最終ページ末尾）
                         </span>
                         <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          {markdownContent ? "エディタ内容を反映中" : "実際の契約書条文に準拠"}
+                          {markdownContent ? "入力中の本文をリアルタイム反映" : "本文未入力"}
                         </span>
                       </div>
 
@@ -734,27 +734,19 @@ export default function SignatureSheetConfigurator({
                             );
                           }
 
-                          // Realistic ending articles matching actual contracts (Project Agreement / NDA)
+                          // No fake hardcoded articles: clearly instruct user
                           return (
-                            <>
-                              <p className="text-slate-400 text-[10px] font-sans italic">
-                                …（前略：第1条〜第8条 本プロジェクト参加条件、知的財産権の帰属、秘密保持義務等）…
+                            <div className="py-6 px-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-1 font-sans">
+                              <p className="font-bold text-slate-700 text-xs">
+                                契約書の本文またはPDFが指定されていません
                               </p>
-                              <div className="space-y-1 pt-1">
-                                <p className="font-bold text-slate-900 text-[11px] font-sans">
-                                  第9条（協議及び合意管轄）
-                                </p>
-                                <p className="text-slate-700 text-[11px] leading-relaxed">
-                                  1. 本合意に定めのない事項又は本合意の解釈に関して疑義が生じた場合は、甲乙互いに誠意をもって協議の上、円満に解決を図るものとする。
-                                </p>
-                                <p className="text-slate-700 text-[11px] leading-relaxed">
-                                  2. 本合意に関してやむを得ず紛争が生じた場合は、日本法を準拠法とし、甲の住所地を管轄する裁判所を第一審の専属的合意管轄裁判所とする。
-                                </p>
-                              </div>
-                              <p className="text-slate-700 text-[11px] leading-relaxed pt-1.5">
-                                本合意の成立を証するため、本書の電磁的記録（PDF原本）を作成し、甲及び乙がそれぞれ電磁的合意の意思表示を行う。
+                              <p className="text-slate-500 text-[11px]">
+                                上のエディタで文章を入力するか、手元のPDFをドロップしてください。
                               </p>
-                            </>
+                              <p className="text-[10px] text-[#0284c7]">
+                                実際に作成・アップロードした契約書の最終行と、その下部余白に印字される署名欄がここに直接表示されます。
+                              </p>
+                            </div>
                           );
                         })()}
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FileText,
   Eye,
@@ -21,6 +21,7 @@ import { generatePdfFromMarkdown } from "@/lib/markdown/contract-pdf";
 interface Props {
   initialTitle?: string;
   onPdfGenerated: (pdfBytes: Uint8Array, title: string, rawMarkdown?: string) => void;
+  onMarkdownChange?: (md: string) => void;
 }
 
 interface ContentBlock {
@@ -163,7 +164,7 @@ function paginateBlocks(blocks: ContentBlock[], docTitle: string): ContentBlock[
   return pages;
 }
 
-export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerated }: Props) {
+export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerated, onMarkdownChange }: Props) {
   const [docTitle, setDocTitle] = useState<string>(initialTitle || "契約書");
   const [markdown, setMarkdown] = useState<string>(
     `プロジェクト代表者（以下「甲」という）と、参加者（以下「乙」という）は、以下のとおり合意する。\n\n## 第1条（目的）\n乙は甲が推進するプロジェクトに関して協力し、誠実に業務を遂行する。\n\n## 第2条（秘密保持）\n甲及び乙は、本契約に関して知り得た相手方の機密情報を厳重に管理し、事前の承諾なく第三者に開示してはならない。\n\n## 第3条（合意管轄）\n本契約に関して紛争が生じたときは、甲の所在地を管轄する地方裁判所を専属的合意管轄裁判所とする。`
@@ -172,6 +173,11 @@ export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerat
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Synchronize markdown in real time to parent configurator preview
+  useEffect(() => {
+    onMarkdownChange?.(markdown);
+  }, [markdown, onMarkdownChange]);
 
   const handleGeneratePdf = async () => {
     setIsGenerating(true);
