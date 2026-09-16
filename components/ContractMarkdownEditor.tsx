@@ -147,7 +147,11 @@ function paginateBlocks(blocks: ContentBlock[], docTitle: string): ContentBlock[
   let currentUsed = 0;
 
   for (const block of blocks) {
-    if (currentUsed + block.linesCost > currentCapacity && currentPage.length > 0) {
+    const isHeading = block.type === "h2" || block.type === "h3";
+    // Orphan heading prevention: Heading must not be stranded at page bottom without at least 3 lines of following content
+    const minNeeded = isHeading ? block.linesCost + 3.5 : block.linesCost;
+
+    if (currentUsed + minNeeded > currentCapacity && currentPage.length > 0) {
       pages.push(currentPage);
       currentPage = [];
       currentCapacity = NORMAL_PAGE_LIMIT;
