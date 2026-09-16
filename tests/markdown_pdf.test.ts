@@ -75,4 +75,29 @@ describe('Markdown Contract & Full Pipeline Suite', () => {
     // Should span multiple pages due to content volume
     expect(doc.getPageCount()).toBeGreaterThan(1);
   });
+
+  it('should handle horizontal rules (---) and blockquotes (>) cleanly in PDF', async () => {
+    const markdown = `# 区切り線テスト契約書
+
+前文テキストです。
+
+---
+
+## 第1条（区切り後の条文）
+本文テキストです。
+
+> ※注意事項：本合意は守秘義務を含みます。
+
+---
+
+以上。`;
+
+    const pdfBytes = await generatePdfFromMarkdown({
+      title: '区切り線テスト契約書',
+      markdown,
+    });
+
+    const doc = await PDFDocument.load(pdfBytes);
+    expect(doc.getPageCount()).toBe(1);
+  });
 });

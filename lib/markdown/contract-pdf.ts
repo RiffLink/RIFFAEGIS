@@ -125,6 +125,39 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
       continue;
     }
 
+    // Horizontal Rule (--- or *** or ___)
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(rawLine.trim())) {
+      ensureSpace(24);
+      currentY -= 8;
+      currentPage.drawLine({
+        start: { x: margin, y: currentY },
+        end: { x: margin + contentWidth, y: currentY },
+        thickness: 0.75,
+        color: rgb(0.8, 0.82, 0.86),
+      });
+      currentY -= 14;
+      continue;
+    }
+
+    // Blockquote (> text)
+    if (rawLine.trim().startsWith('>')) {
+      const quoteText = stripMarkdownSyntax(rawLine.trim().replace(/^>\s*/, ''));
+      ensureSpace(20);
+      currentY -= 4;
+      const startY = currentY;
+      wrapAndDrawText(currentPage, quoteText, margin + 14, contentWidth - 16, 8.5, fontJp, ensureSpace, (newY) => {
+        // Draw vertical accent border for quote
+        currentPage.drawLine({
+          start: { x: margin + 4, y: startY + 6 },
+          end: { x: margin + 4, y: newY - 2 },
+          thickness: 2,
+          color: rgb(0.01, 0.52, 0.78),
+        });
+        currentY = newY - 6;
+      }, currentY);
+      continue;
+    }
+
     // List item (- item or * item)
     if (/^[-*]\s+/.test(rawLine)) {
       const text = stripMarkdownSyntax(rawLine.replace(/^[-*]\s+/, ''));

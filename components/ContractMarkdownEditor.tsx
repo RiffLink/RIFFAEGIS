@@ -24,7 +24,7 @@ interface Props {
 }
 
 interface ContentBlock {
-  type: "h1" | "h2" | "h3" | "ul" | "ol" | "p" | "empty";
+  type: "h1" | "h2" | "h3" | "ul" | "ol" | "p" | "empty" | "hr" | "quote";
   content: string;
   linesCost: number;
 }
@@ -93,6 +93,18 @@ function parseBlocks(markdownText: string): ContentBlock[] {
     }
     if (trimmed.startsWith("### ")) {
       blocks.push({ type: "h3", content: trimmed.replace(/^###\s+/, ""), linesCost: 2 });
+      continue;
+    }
+    // Horizontal Rule (---, ***, ___)
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      blocks.push({ type: "hr", content: "", linesCost: 1.5 });
+      continue;
+    }
+    // Blockquote (> text)
+    if (trimmed.startsWith(">")) {
+      const quoteText = trimmed.replace(/^>\s*/, "");
+      const linesCost = Math.max(1.5, Math.ceil(quoteText.length / 34));
+      blocks.push({ type: "quote", content: quoteText, linesCost });
       continue;
     }
     if (/^[-*]\s+/.test(trimmed)) {
@@ -430,6 +442,23 @@ export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerat
                     }
                     if (b.type === "empty") {
                       return <div key={bIdx} className="h-2" />;
+                    }
+                    if (b.type === "hr") {
+                      return (
+                        <div key={bIdx} className="py-2.5">
+                          <hr className="border-t border-slate-300" />
+                        </div>
+                      );
+                    }
+                    if (b.type === "quote") {
+                      return (
+                        <blockquote
+                          key={bIdx}
+                          className="border-l-3 border-[#0284c7]/60 bg-slate-50/80 rounded-r-md p-2.5 my-2 text-slate-700 italic text-xs leading-relaxed"
+                        >
+                          {renderInline(b.content)}
+                        </blockquote>
+                      );
                     }
                     return (
                       <p key={bIdx} className="text-slate-800 leading-relaxed text-justify">
