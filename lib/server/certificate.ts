@@ -22,7 +22,7 @@ export async function generateAuditCertificatePdf({
   signer,
   auditLogs,
   atomicTime,
-  verificationUrl = "https://app.riff-aegis.com/verify",
+  verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://aegis.rifflink.com"}/verify`,
 }: GenerateCertificateParams): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);

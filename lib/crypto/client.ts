@@ -67,7 +67,7 @@ This packet contains:
 2. ${baseFilename}_audit_certificate.pdf - The independent legal audit certificate.
 
 You can verify the authenticity, SHA-256 integrity, and quantum-resistant ML-DSA-65 signatures offline at:
-https://app.riff-aegis.com/verify
+https://aegis.rifflink.com/verify
 `
   );
 

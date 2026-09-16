@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const emailFrom = process.env.EMAIL_FROM || "RiffAegis <noreply@riff-aegis.com>";
+const emailFrom = process.env.EMAIL_FROM || "RiffAegis <security@riffaegis.rifflink.com>";
 
 let resendClient: Resend | null = null;
 if (resendApiKey) {
