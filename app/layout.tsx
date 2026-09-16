@@ -115,10 +115,21 @@ export default function RootLayout({
                 <ExternalLink className="w-3 h-3" />
               </Link>
               <a
+                href="https://github.com/RiffLink/riffaegis-anchors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-slate-800 transition-colors flex items-center space-x-1 font-semibold text-amber-700 hover:text-amber-800"
+                title="GitHub 公開マークルルート監査台帳"
+              >
+                <span>公開監査台帳</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <a
                 href="https://github.com/RiffLink/RIFFAEGIS"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-slate-800 transition-colors flex items-center space-x-1 font-semibold"
+                title="RiffAegis ソースコード (GitHub)"
               >
                 <GithubIcon className="w-3.5 h-3.5" />
                 <span>GitHub</span>

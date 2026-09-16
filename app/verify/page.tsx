@@ -7,6 +7,7 @@ import {
   FileCheck,
   Printer,
   FileText,
+  ExternalLink,
 } from "lucide-react";
 import {
   verifyAgreementOffline,
@@ -188,6 +189,36 @@ export default function VerifyPortalPage() {
             </div>
           </div>
         )}
+
+        {/* Global Public Anchor Verification Guide */}
+        <div className="p-5 rounded-2xl bg-amber-50/60 border border-amber-200/70 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold text-amber-900">🌐 外部分散アンカー（第三者監査）</span>
+            </div>
+            <a
+              href="https://github.com/RiffLink/riffaegis-anchors"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold text-amber-800 hover:text-amber-950 flex items-center space-x-1 underline underline-offset-2"
+            >
+              <span>公開台帳を開く</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          <p className="text-xs text-amber-800/90 leading-relaxed">
+            合意締結証明書に記載された <strong>Final Merkle Root</strong> は、GitHub 公開リポジトリ（
+            <a
+              href="https://github.com/RiffLink/riffaegis-anchors"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono font-bold underline"
+            >
+              RiffLink/riffaegis-anchors
+            </a>
+            ）にも自動刻印されています。コミット履歴のハッシュと突き合わせることで、RiffAegis サーバーの稼働状況に依存せず、いつでも契約日時の存在を数学的・客観的に立証できます。
+          </p>
+        </div>
       </div>
     </div>
   );

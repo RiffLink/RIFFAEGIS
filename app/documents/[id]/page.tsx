@@ -557,6 +557,40 @@ export default function DocumentDetailPage({
             </p>
           </div>
         </div>
+
+        {/* Public GitHub & OTS Anchor Proof Banner */}
+        {document.status === "completed" && (
+          <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <span className="font-bold text-amber-900 flex items-center space-x-1.5">
+                <span>🌐 GitHub公開監査台帳刻印</span>
+                {document.github_commit_sha ? (
+                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">刻印完了</span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">公開アンカー準備完了</span>
+                )}
+              </span>
+              <p className="text-amber-800 text-[11px]">
+                {document.github_commit_sha
+                  ? `コミット SHA: ${document.github_commit_sha.slice(0, 10)}... (Merkle Root刻印済み)`
+                  : "本契約の Final Merkle Root は外部の公開台帳リポジトリで第三者照合が可能です。"}
+              </p>
+            </div>
+            <a
+              href={
+                document.github_commit_sha
+                  ? `https://github.com/RiffLink/riffaegis-anchors/commit/${document.github_commit_sha}`
+                  : "https://github.com/RiffLink/riffaegis-anchors"
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-xs transition-colors shrink-0"
+            >
+              <span>{document.github_commit_sha ? "コミット証跡を確認" : "公開台帳を見る"}</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Creator Storage & Preservation Guide */}

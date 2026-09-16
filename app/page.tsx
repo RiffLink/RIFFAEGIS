@@ -6,6 +6,7 @@ import {
   Fingerprint,
   ArrowRight,
   FileCheck,
+  ExternalLink,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -50,14 +51,24 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="pt-1">
+        <div className="pt-1 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
           <Link
             href="/security"
-            className="inline-flex items-center space-x-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-medium"
+            className="inline-flex items-center space-x-1.5 text-slate-500 hover:text-slate-800 transition-colors font-medium"
           >
-            <span>端末完結暗号化と耐量子署名の技術仕様を見る</span>
+            <span>技術・セキュリティ仕様</span>
             <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </Link>
+          <span className="text-slate-300 hidden sm:inline">・</span>
+          <a
+            href="https://github.com/RiffLink/riffaegis-anchors"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center space-x-1 text-amber-700 hover:text-amber-800 transition-colors font-medium"
+          >
+            <span>GitHub 公開監査台帳</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       </section>
 
