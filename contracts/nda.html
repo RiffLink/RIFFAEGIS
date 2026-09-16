@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>秘密保持契約書（NDA）</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 22mm 20mm 22mm 20mm;
+      @bottom-center {
+        content: counter(page) " / " counter(pages);
+        font-size: 9pt;
+        color: #64748b;
+      }
+    }
+    body {
+      font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+      font-size: 10pt;
+      line-height: 1.75;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      font-size: 17pt;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      margin-top: 0;
+      margin-bottom: 24px;
+      color: #0f172a;
+    }
+    .preamble {
+      text-indent: 1em;
+      margin-bottom: 20px;
+      text-align: justify;
+    }
+    .article {
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+    .article-title {
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .clause {
+      margin-bottom: 6px;
+      text-align: justify;
+    }
+    .clause-num {
+      font-weight: 600;
+    }
+    .sub-item {
+      padding-left: 1.5em;
+      text-indent: -1.5em;
+      margin-bottom: 4px;
+    }
+    .closing {
+      margin-top: 24px;
+      margin-bottom: 20px;
+      text-align: justify;
+      page-break-inside: avoid;
+    }
+    .date-text {
+      text-align: right;
+      font-size: 9.5pt;
+      color: #475569;
+      margin-bottom: 20px;
+    }
+    .signature-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 16px;
+      page-break-inside: avoid;
+    }
+    .signature-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 18px;
+      background-color: #f8fafc;
+    }
+    .sig-role {
+      font-weight: 700;
+      font-size: 10pt;
+      color: #0284c7;
+      margin-bottom: 6px;
+      border-bottom: 1px dashed #cbd5e1;
+      padding-bottom: 4px;
+    }
+    .sig-row {
+      margin-bottom: 4px;
+      font-size: 9pt;
+    }
+    .sig-label {
+      font-weight: 600;
+      color: #475569;
+      display: inline-block;
+      width: 120px;
+    }
+    .sig-val {
+      color: #0f172a;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 8pt;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background-color: #e0f2fe;
+      color: #0369a1;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>秘密保持契約書（NDA）</h1>
+
+  <div class="preamble">
+    本契約に添付される電磁的記録「合意締結証明書（Audit Certificate）」記載の作成者（以下「甲」という）と、同証明書記載の受領者（以下「乙」という）は、甲乙間におけるサービス「RiffLink」その他甲の事業・活動に関する取引・業務提携の検討、共同開発、又はこれに関連する業務の準備（以下「本目的」という）に際し、開示される秘密情報の保持について、次のとおり契約（以下「本契約」という）を締結する。
+  </div>
+
+  <div class="article">
+    <div class="article-title">第1条（秘密情報の定義）</div>
+    <div class="clause">
+      <span class="clause-num">1.</span> 本契約における「秘密情報」とは、甲又は乙（以下、情報を開示する側を「開示者」、情報の開示を受ける側を「受領者」という）が、本目的に関連して相手方に開示又は提供した一切の技術上、営業上、開発上、財務上、組織上の情報（ソースコード、オブジェクトコード、アルゴリズム、データベース構造、仕様書、画面遷移図、API仕様、ユーザーデータ、ビジネスアイデア、事業計画、ノウハウ、顧客情報等を含むがこれらに限られない）であって、次の各号のいずれかに該当するものをいう。
+      <div class="sub-item">(1) 書面、電磁的記録（電子メール、チャットツール、各種データファイル、ソースコード管理リポジトリ等を含む）、その他有形の媒体により開示される場合、秘密である旨（「秘密」「極秘」「Confidential」等の表示）が明記されたもの、<strong>又は開示の状況・性質から合理的に秘密として取り扱われるべきもの</strong></div>
+      <div class="sub-item">(2) 口頭、映像その他無形の方法により開示される場合、開示の際に秘密である旨が告知され、かつ開示後14日以内に書面又は電磁的記録（電子メール等）によりその要領がまとめられ、秘密である旨が通知されたもの</div>
+    </div>
+    <div class="clause">
+      <span class="clause-num">2.</span> 甲乙間で本目的に関する協議・交渉を行っている事実、及び本契約の存在並びにその内容も、秘密情報に含まれるものとする。
+    </div>
+    <div class="clause">
+      <span class="clause-num">3.</span> 前二項の規定にかかわらず、次の各号のいずれかに該当することを受領者が客観的証拠をもって立証した情報は、秘密情報から除外するものとする。
+      <div class="sub-item">(1) 開示を受けた時点で、既に公知であった情報</div>
+      <div class="sub-item">(2) 開示を受けた後、受領者の責に帰すべき事由によらず公知となった情報</div>
+      <div class="sub-item">(3) 開示を受ける前に、受領者が既に適法に保有していた情報</div>
+      <div class="sub-item">(4) 受領者が、秘密保持義務を負わない正当な権限を有する第三者から秘密保持義務を負うことなく適法に取得した情報</div>
+      <div class="sub-item">(5) 開示者の秘密情報にアクセスすることなく、受領者が独自に開発・創作した情報</div>
+    </div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第2条（秘密保持義務及び管理）</div>
+    <div class="clause"><span class="clause-num">1.</span> 受領者は、開示者の秘密情報を極秘として厳重に管理・保管し、善良な管理者の注意義務をもって取り扱わなければならない。</div>
+    <div class="clause"><span class="clause-num">2.</span> 受領者は、開示者の事前の書面による承諾なく、秘密情報を本目的以外の目的（自己若しくは第三者のための利用、競合サービスの企画・開発・運営等を含むがこれらに限られない）に使用、利用、又は適用してはならない。</div>
+    <div class="clause"><span class="clause-num">3.</span> 受領者は、開示者の事前の書面による承諾なく、秘密情報を第三者（受領者の業務委託先、関連会社等を含む）に開示、提供、漏洩、又は公開してはならない。</div>
+    <div class="clause"><span class="clause-num">4.</span> 受領者は、本目的のために秘密情報を知る合理的必要性のある自己の役員及び従業員（受領者が個人の場合は履行補助者。以下「役職員等」という）、並びに法令上守秘義務を負う外部の専門家（弁護士、公認会計士、税理士等）に対してのみ、必要な範囲内に限り秘密情報を開示することができる。ただし、受領者は、当該役職員等に対し、退職後も含め本契約と同等以上の秘密保持義務を課すものとし、当該役職員等の義務違反について、受領者が自ら違反した場合と同様の一切の責任を開示者に対して負うものとする。</div>
+    <div class="clause"><span class="clause-num">5.</span> 受領者は、開示者の事前の書面による承諾を得ることなく、秘密情報を第三者が提供する外部の生成系AIサービス、機械学習モデル、その他自動処理ツール等に入力、送信、又は学習させてはならない。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第3条（複製の制限及び解析の禁止）</div>
+    <div class="clause"><span class="clause-num">1.</span> 受領者は、本目的のために真に必要な最小限の範囲を超えて、開示者の秘密情報を複製（印刷、ダウンロード、スクリーンショットの取得、外部記憶媒体への保存等を含む）してはならない。なお、当該複製物はすべて原本と同様に秘密情報として取り扱うものとする。</div>
+    <div class="clause"><span class="clause-num">2.</span> 受領者は、開示者の秘密情報（ソフトウェア、ソースコード等を含む）について、リバースエンジニアリング、逆コンパイル、逆アセンブル、改変、翻案、その他これらに類する解析行為を行ってはならない。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第4条（知的財産権の帰属及び非許諾）</div>
+    <div class="clause"><span class="clause-num">1.</span> 開示者が受領者に開示した秘密情報に関する特許権、実用新案権、意匠権、商標権、著作権（著作権法第27条及び第28条に定める権利を含む）その他一切の知的財産権（それらを受ける権利を含む）及びノウハウ等は、すべて開示者に留保され、本契約による開示によって受領者に何らの権利も譲渡、移転、又は実施許諾（ライセンス）されるものではない。</div>
+    <div class="clause"><span class="clause-num">2.</span> 受領者は、開示者の事前の書面による承諾なく、開示者の秘密情報に基づいて特許出願、実用新案登録出願、意匠登録出願、商標登録出願等のいかなる知的財産権の権利化手続も行ってはならない。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第5条（法令等に基づく開示）</div>
+    <div class="clause">受領者は、法令の規定、裁判所、検察庁、警察、金融商品取引所その他正当な権限を有する公的機関の命令又は要請に基づき秘密情報の開示を求められた場合、法律上可能な限り速やかに開示者に対して事前にその旨を通知し、開示する秘密情報が必要最小限の範囲にとどまるよう努めなければならない。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第6条（情報の返還及び廃棄）</div>
+    <div class="clause">本目的が終了した場合、本契約が終了した場合、又は開示者から何らの理由を問わず請求があった場合、受領者は、開示者の指示に従い、秘密情報（原本、すべての複製物、及びこれらに基づき作成された一切の資料・データを含む）を直ちに返還し、又は再生不可能な方法で復元不能に破棄・消去した上、開示者が指定した日から14日以内に、代表者又は本人が電子署名又は記名押印した廃棄・消去完了証明書を開示者に提出しなければならない。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第7条（有効期間及び義務の存続）</div>
+    <div class="clause"><span class="clause-num">1.</span> 本契約の有効期間は、電子署名完了日（契約締結日）から3年間とする。ただし、期間満了の1ヶ月前までに甲乙いずれからも別段の書面又は電磁的方法による申し出がない場合、本契約は同条件で1年間自動更新されるものとし、以後も同様とする。</div>
+    <div class="clause"><span class="clause-num">2.</span> 前項の規定にかかわらず、本契約終了後も、開示された秘密情報に関する第2条（秘密保持義務及び管理）、第3条（複製の制限及び解析の禁止）、第4条（知的財産権の帰属及び非許諾）、第6条（情報の返還及び廃棄）、第8条（損害賠償及び差止請求）乃至第11条（合意管轄）の義務は、本契約終了後3年間有効に存続するものとする。<strong>ただし、ソースコード、アルゴリズムその他公知となっていない独自技術については、公知となるまで存続するものとする。</strong></div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第8条（損害賠償及び差止請求）</div>
+    <div class="clause"><span class="clause-num">1.</span> 受領者が本契約のいずれかの条項に違反し、又は違反するおそれがある場合、開示者は受領者に対し、当該違反行為の差止め、予防、現状回復、並びに秘密情報及びその複製物等の使用禁止又は廃棄を請求することができる。</div>
+    <div class="clause"><span class="clause-num">2.</span> 受領者が本契約のいずれかの条項に違反した場合、受領者は開示者に対し、これにより開示者に生じた一切の損害（弁護士費用及び逸失利益を含む）を賠償しなければならない。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第9条（契約上の地位の移転）</div>
+    <div class="clause">甲は、本目的に関する事業を法人化する場合、又は本目的に関する事業を第三者に譲渡若しくは承継させる場合、乙の事前の個別の承諾を要することなく、本契約上の地位及び権利義務の全部又は一部を、当該設立された法人又は承継先に対して移転・承継させることができるものとし、乙はあらかじめこれに異議なく承諾するものとする。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第10条（反社会的勢力の排除）</div>
+    <div class="clause">甲及び乙は、自ら（自己の役職員等を含む）が暴力団その他反社会的勢力に該当しないこと、及びこれらと何ら関係を有しないことを表明し保証する。一方が本条に違反した場合、相手方は何らの催告を要せず直ちに本契約を解除し、生じた損害の賠償を請求することができる。</div>
+  </div>
+
+  <div class="article">
+    <div class="article-title">第11条（準拠法及び合意管轄）</div>
+    <div class="clause"><span class="clause-num">1.</span> 本契約の解釈及び適用に関しては、日本法に準拠するものとする。</div>
+    <div class="clause"><span class="clause-num">2.</span> 本契約に関して生じた一切の紛争については、甲の住所地を管轄する地方裁判所又は簡易裁判所を第一審の専属的合意管轄裁判所とする。</div>
+  </div>
+
+  <div class="closing">
+    本契約の成立を証するため、本書の電磁的記録（PDF原本）を作成し、甲及び乙がそれぞれ電磁的記録に対して合意の意思表示として電子署名（RiffAegis 耐量子暗号 ML-DSA-65 および FIDO2 生体パスキー認証による電子署名）を施したうえ、各々当該電磁的記録及び電子合意締結証明書（Audit Certificate）を電磁的に保有・保管する。
+  </div>
+
+  <div class="date-text">
+    契約締結日：本書に添付される「合意締結証明書」記載の確定日時（NICT世界原子時計／分散タイムスタンプ確定日時）
+  </div>
+
+  <div class="signature-container">
+    <!-- 甲 -->
+    <div class="signature-card">
+      <div class="sig-role">【甲】開示者 / 権利保有者</div>
+      <div class="sig-row">
+        <span class="sig-label">当事者の表示：</span>
+        <span class="sig-val">本書に添付される「合意締結証明書（Audit Certificate）」記載の作成者情報に準ずる</span>
+      </div>
+      <div class="sig-row">
+        <span class="sig-label">電子署名方式：</span>
+        <span class="sig-val">RiffAegis 電子署名 <span class="badge">NIST ML-DSA-65 耐量子署名</span><span class="badge">FIDO2 生体認証</span></span>
+      </div>
+    </div>
+
+    <!-- 乙 -->
+    <div class="signature-card">
+      <div class="sig-role">【乙】受領者</div>
+      <div class="sig-row">
+        <span class="sig-label">当事者の表示：</span>
+        <span class="sig-val">本書に添付される「合意締結証明書（Audit Certificate）」記載の署名者情報に準ずる</span>
+      </div>
+      <div class="sig-row">
+        <span class="sig-label">電子署名方式：</span>
+        <span class="sig-val">RiffAegis 電子署名 <span class="badge">NIST ML-DSA-65 耐量子署名</span><span class="badge">ワンタイムOTP認証</span></span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

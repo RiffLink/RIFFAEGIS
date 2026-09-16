@@ -1,0 +1,59 @@
+import { describe, it, expect } from 'vitest';
+import { PDFDocument } from 'pdf-lib';
+import { generatePdfFromMarkdown } from '../lib/markdown/contract-pdf';
+import { fuseSignatureSheet } from '../lib/crypto/signature-sheet';
+import { SignatureFusionConfig, getDefaultPartyFields } from '../lib/crypto/signature-types';
+
+describe('Markdown Contract & Full Pipeline Suite', () => {
+  it('should generate valid PDF from Markdown and fuse signature sheet', async () => {
+    const markdown = `# プロジェクト参加合意書
+
+プロジェクト代表者（以下「甲」という）と、参加者（以下「乙」という）は、以下のとおり合意する。
+
+## 第1条（目的）
+乙は本プロジェクトに協力し、成果物の開発を行う。
+
+## 第2条（秘密保持）
+乙は業務上知り得た機密情報を第三者に開示しない。`;
+
+    // 1. Generate PDF from Markdown
+    const pdfBytes = await generatePdfFromMarkdown({
+      title: 'プロジェクト参加合意書',
+      markdown,
+    });
+    expect(pdfBytes).toBeDefined();
+    expect(pdfBytes.length).toBeGreaterThan(0);
+
+    const doc = await PDFDocument.load(pdfBytes);
+    expect(doc.getPageCount()).toBe(1);
+
+    // 2. Fuse signature block with custom fields (like 学籍番号) into the bottom margin
+    const config: SignatureFusionConfig = {
+      enabled: true,
+      placement: 'inline_margin',
+      inlineMarginOffset: 40,
+      agreementDateType: 'auto_on_sign',
+      parties: [
+        {
+          roleName: '甲',
+          roleDescription: '作成者',
+          fields: getDefaultPartyFields('partyA'),
+        },
+        {
+          roleName: '乙',
+          roleDescription: '署名者',
+          fields: [
+            { id: 'b-custom-1', key: 'custom', label: '学籍番号', value: '2026-ENG-4892', enabled: true, isCustom: true },
+            { id: 'b-name', key: 'name', label: '氏名', value: '山田 太郎', enabled: true },
+          ],
+        },
+      ],
+    };
+
+    const finalBytes = await fuseSignatureSheet(pdfBytes, config);
+    const finalDoc = await PDFDocument.load(finalBytes);
+
+    // Should stay 1 page because it was fused inline in the bottom margin!
+    expect(finalDoc.getPageCount()).toBe(1);
+  });
+});
