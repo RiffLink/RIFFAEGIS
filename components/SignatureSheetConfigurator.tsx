@@ -7,6 +7,7 @@ import {
   SignaturePlacement,
 } from "@/lib/crypto/signature-types";
 import { fuseSignatureSheet } from "@/lib/crypto/signature-sheet";
+import { PDFDocument } from "pdf-lib";
 import {
   Check,
   Plus,
@@ -51,6 +52,8 @@ export default function SignatureSheetConfigurator({
   const [isRenderingInlinePdf, setIsRenderingInlinePdf] = useState<boolean>(false);
   const [previewTab, setPreviewTab] = useState<'real_pdf' | 'sheet_simulator'>('real_pdf');
 
+  const [totalPageCount, setTotalPageCount] = useState<number>(1);
+
   // Auto-render real fused PDF when pdfBytes or config changes
   useEffect(() => {
     if (!pdfBytes) {
@@ -65,6 +68,8 @@ export default function SignatureSheetConfigurator({
       try {
         const fusedBytes = await fuseSignatureSheet(pdfBytes, config);
         if (!active) return;
+        const doc = await PDFDocument.load(fusedBytes);
+        setTotalPageCount(doc.getPageCount());
         const blob = new Blob([fusedBytes as unknown as BlobPart], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         setInlinePdfUrl((prev) => {
@@ -679,16 +684,31 @@ export default function SignatureSheetConfigurator({
                           </div>
                         </div>
                       )}
-                      <iframe
-                        src={`${inlinePdfUrl}#toolbar=0&navpanes=0`}
+                      <object
+                        data={`${inlinePdfUrl}#page=${totalPageCount}&toolbar=0&navpanes=0`}
+                        type="application/pdf"
                         className="w-full h-full border-0"
-                        title="Actual PDF Preview"
-                      />
+                      >
+                        <iframe
+                          src={`${inlinePdfUrl}#page=${totalPageCount}&toolbar=0&navpanes=0`}
+                          className="w-full h-full border-0"
+                          title="Actual PDF Preview"
+                        />
+                      </object>
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <span>💡 アップロードされた実際のPDFに署名欄が直接印字された状態です。余白や位置をそのまま目視できます。</span>
-                  </p>
+                  <div className="flex items-center justify-between w-full max-w-[660px] text-[11px] text-slate-500 pt-1">
+                    <span>💡 アップロードされた実際のPDFに署名欄が直接印字された状態です。</span>
+                    <a
+                      href={inlinePdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0284c7] font-bold hover:underline flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>別タブで拡大表示</span>
+                    </a>
+                  </div>
                 </div>
               ) : (
                 /* A4 Sheet Simulator (Exact contract ending articles & realistic vertical flow) */

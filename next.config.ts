@@ -7,10 +7,11 @@ const cspHeader = `
   img-src 'self' data: blob:;
   font-src 'self' data:;
   connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.r2.cloudflarestorage.com https://ntp-a1.nict.go.jp https://api.github.com https://*.opentimestamps.org https://a.pool.opentimestamps.org https://b.pool.opentimestamps.org;
-  object-src 'none';
+  frame-src 'self' blob:;
+  object-src 'self' blob:;
   base-uri 'self';
   form-action 'self';
-  frame-ancestors 'none';
+  frame-ancestors 'self';
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {
@@ -25,7 +26,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "X-Frame-Options",
-            value: "DENY",
+            value: "SAMEORIGIN",
           },
           {
             key: "X-Content-Type-Options",
