@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, PDFFont } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { loadJapaneseFont } from '../crypto/signature-sheet';
 
@@ -37,6 +37,11 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
   }
 
   const lines = contentMarkdown.split('\n');
+  // Trim trailing empty lines
+  while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+    lines.pop();
+  }
+
   const pageWidth = 595.28;
   const pageHeight = 841.89;
   const margin = 48;
@@ -49,6 +54,29 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
     if (currentY - neededHeight < margin) {
       currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
       currentY = pageHeight - margin;
+    }
+  };
+
+  // Helper to wrap and draw multi-line text cleanly across page boundaries
+  const wrapAndDraw = (
+    text: string,
+    x: number,
+    maxWidth: number,
+    fontSize: number,
+    color = rgb(0.15, 0.15, 0.18)
+  ) => {
+    const charsPerLine = Math.max(1, Math.floor(maxWidth / (fontSize * 0.95)));
+    for (let idx = 0; idx < text.length; idx += charsPerLine) {
+      ensureSpace(fontSize + 6);
+      const chunk = text.slice(idx, idx + charsPerLine);
+      currentPage.drawText(chunk, {
+        x,
+        y: currentY,
+        size: fontSize,
+        font: fontJp,
+        color,
+      });
+      currentY -= fontSize + 5;
     }
   };
 
@@ -158,78 +186,42 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
     // Blockquote (> text)
     if (rawLine.trim().startsWith('>')) {
       const quoteText = stripMarkdownSyntax(rawLine.trim().replace(/^>\s*/, ''));
-      ensureSpace(20);
-      currentY -= 4;
       const startY = currentY;
-      wrapAndDrawText(currentPage, quoteText, margin + 14, contentWidth - 16, 8.5, fontJp, ensureSpace, (newY) => {
-        // Draw vertical accent border for quote
-        currentPage.drawLine({
-          start: { x: margin + 4, y: startY + 6 },
-          end: { x: margin + 4, y: newY - 2 },
-          thickness: 2,
-          color: rgb(0.01, 0.52, 0.78),
-        });
-        currentY = newY - 6;
-      }, currentY);
+      wrapAndDraw(quoteText, margin + 14, contentWidth - 16, 8.5, rgb(0.3, 0.35, 0.4));
+      // Accent line on the left
+      currentPage.drawLine({
+        start: { x: margin + 4, y: startY + 2 },
+        end: { x: margin + 4, y: currentY + 4 },
+        thickness: 2,
+        color: rgb(0.01, 0.52, 0.78),
+      });
+      currentY -= 6;
       continue;
     }
 
     // Ordered / Numbered list item (e.g. 1. item, (1) item)
     if (/^(\d+\.|\(\d+\))\s+/.test(rawLine.trim())) {
       const text = stripMarkdownSyntax(rawLine.trim());
-      wrapAndDrawText(currentPage, text, margin + 12, contentWidth - 12, 9.5, fontJp, ensureSpace, (newY) => {
-        currentY = newY;
-      }, currentY);
+      wrapAndDraw(text, margin + 12, contentWidth - 12, 9.5);
       continue;
     }
 
     // List item (- item or * item)
     if (/^[-*]\s+/.test(rawLine)) {
       const text = stripMarkdownSyntax(rawLine.replace(/^[-*]\s+/, ''));
-      wrapAndDrawText(currentPage, `・ ${text}`, margin + 12, contentWidth - 12, 9.5, fontJp, ensureSpace, (newY) => {
-        currentY = newY;
-      }, currentY);
+      wrapAndDraw(`・ ${text}`, margin + 12, contentWidth - 12, 9.5);
       continue;
     }
 
     // Standard paragraph
-    wrapAndDrawText(currentPage, stripMarkdownSyntax(rawLine), margin, contentWidth, 9.5, fontJp, ensureSpace, (newY) => {
-      currentY = newY;
-    }, currentY);
+    wrapAndDraw(stripMarkdownSyntax(rawLine), margin, contentWidth, 9.5);
+  }
+
+  // If the last page ended up completely blank, remove it
+  const pageCount = pdfDoc.getPageCount();
+  if (pageCount > 1 && currentY === pageHeight - margin) {
+    pdfDoc.removePage(pageCount - 1);
   }
 
   return await pdfDoc.save();
-}
-
-/**
- * Helper to wrap text according to line width
- */
-function wrapAndDrawText(
-  page: any,
-  text: string,
-  x: number,
-  maxWidth: number,
-  fontSize: number,
-  font: PDFFont,
-  ensureSpace: (h: number) => void,
-  setY: (y: number) => void,
-  initialY: number
-) {
-  let y = initialY;
-  // Estimate character width for Japanese full-width vs ASCII
-  const charsPerLine = Math.floor(maxWidth / (fontSize * 0.95));
-
-  for (let idx = 0; idx < text.length; idx += charsPerLine) {
-    ensureSpace(fontSize + 5);
-    const chunk = text.slice(idx, idx + charsPerLine);
-    page.drawText(chunk, {
-      x,
-      y,
-      size: fontSize,
-      font,
-      color: rgb(0.15, 0.15, 0.18),
-    });
-    y -= fontSize + 4;
-  }
-  setY(y);
 }
