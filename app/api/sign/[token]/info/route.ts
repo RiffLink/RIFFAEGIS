@@ -87,9 +87,17 @@ export async function GET(
       "契約書作成者（甲）";
 
     const allSigners = await db.listSignersByDocument(document.id);
-    const totalSigners = allSigners.length;
-    const completedSigners = allSigners.filter((s) => !!s.signed_at).length;
-    const isAllCompleted = totalSigners > 0 && completedSigners === totalSigners;
+    const uniqueEmails = Array.from(new Set(allSigners.map((s) => s.email.toLowerCase())));
+    const totalSigners = uniqueEmails.length;
+    const signedEmails = new Set(allSigners.filter((s) => !!s.signed_at).map((s) => s.email.toLowerCase()));
+    const completedSigners = signedEmails.size;
+    const isAllCompleted = totalSigners > 0 && completedSigners >= totalSigners;
+
+    // Match signer configured fields from creator's document metadata
+    const signerFieldsList = ((meta.signer_fields || []) as any[]);
+    const matchedSignerFields = signerFieldsList.find(
+      (sf: any) => sf.email?.toLowerCase() === signer.email?.toLowerCase()
+    ) || signerFieldsList[0] || {};
 
     return NextResponse.json({
       document_id: document.id,
@@ -103,8 +111,12 @@ export async function GET(
       creator_ml_dsa_signature: sigBase64,
       status: document.status,
       signer_email: signer.email,
-      signer_name: signer.name || null,
-      signer_address: signer.address || null,
+      signer_name: signer.name || matchedSignerFields.name || null,
+      signer_address: signer.address || matchedSignerFields.address || null,
+      signer_company: matchedSignerFields.company || null,
+      signer_title: matchedSignerFields.title || null,
+      signer_custom_label: matchedSignerFields.custom_label || null,
+      signer_custom_value: matchedSignerFields.custom_value || null,
       requires_otp: !signer.identity_auth_verified_at,
       already_signed: isAlreadySigned,
       total_signers: totalSigners,

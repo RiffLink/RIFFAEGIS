@@ -62,30 +62,45 @@ export async function POST(
 
     const existingBinding = (document.creator_webauthn_binding || {}) as Record<string, unknown>;
 
-    // If document is already pending, return existing token without destroying signers!
-    if (document.status === "pending" && existingBinding.first_signer_token) {
-      const allSigners = await db.listSignersByDocument(id);
+    // Check if signers already exist in database to prevent double activation from concurrent requests
+    const existingSigners = await db.listSignersByDocument(id);
+    if (existingSigners.length > 0 && existingBinding.first_signer_token) {
       const firstToken = existingBinding.first_signer_token as string;
       const signingUrlTemplate = `${appUrl}/sign/${firstToken}#{key}`;
+
+      // Deduplicate by email to calculate accurate total signers
+      const uniqueEmails = Array.from(new Set(existingSigners.map((s) => s.email.toLowerCase())));
 
       return NextResponse.json({
         status: "pending",
         signing_token: firstToken,
         first_signer_token: firstToken,
         signing_url_template: signingUrlTemplate,
-        total_signers: allSigners.length || 1,
+        total_signers: uniqueEmails.length,
         already_activated: true,
       });
     }
 
-    const rawSigners = Array.isArray(body.signers) && body.signers.length > 0
+    const rawSignersInput = Array.isArray(body.signers) && body.signers.length > 0
       ? body.signers
       : [{ email: body.signer_email || "unspecified@signer.local", role: "signer" }];
+
+    // Deduplicate input signers by email to guarantee each person is only registered once
+    const uniqueSignersMap = new Map<string, any>();
+    for (const s of rawSignersInput) {
+      const emailKey = (s.email || "").trim().toLowerCase();
+      if (emailKey && !uniqueSignersMap.has(emailKey)) {
+        uniqueSignersMap.set(emailKey, s);
+      }
+    }
+    const rawSigners = uniqueSignersMap.size > 0
+      ? Array.from(uniqueSignersMap.values())
+      : rawSignersInput;
 
     const tokenExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString(); // 7 days
     let firstSignerToken = "";
 
-    // Clear any un-signed duplicate rows from previous activate attempts
+    // Clear any previous un-signed duplicate rows before inserting fresh ones
     await db.deleteSignersByDocument(id);
 
     for (let i = 0; i < rawSigners.length; i++) {
@@ -123,12 +138,13 @@ export async function POST(
       });
     }
 
-    // Persist status and creator-accessible copy of first signer token
+    // Persist status, creator-accessible first signer token, and full signer fields
     await db.updateDocument(id, {
       status: "pending",
       creator_webauthn_binding: {
         ...existingBinding,
         first_signer_token: firstSignerToken,
+        signer_fields: rawSigners,
       },
     });
 

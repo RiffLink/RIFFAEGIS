@@ -20,13 +20,23 @@ export async function finalizeDocument(documentId: string): Promise<void> {
   const allSigners = await db.listSignersByDocument(documentId);
   if (allSigners.length === 0) throw new Error(`Signers for document ${documentId} not found`);
 
-  // Check if any signers in order have not yet signed
-  const remainingSigners = allSigners.filter((s) => !s.signed_at);
+  // Deduplicate signers by email so duplicate rows for the same person never block completion
+  const signedEmails = new Set(allSigners.filter((s) => !!s.signed_at).map((s) => s.email.toLowerCase()));
+  const uniqueSignersMap = new Map<string, typeof allSigners[0]>();
+  for (const s of allSigners) {
+    const key = s.email.toLowerCase();
+    if (!uniqueSignersMap.has(key)) {
+      uniqueSignersMap.set(key, s);
+    }
+  }
+  const uniqueSigners = Array.from(uniqueSignersMap.values());
+  const remainingSigners = uniqueSigners.filter((s) => !signedEmails.has(s.email.toLowerCase()));
+
   if (remainingSigners.length > 0) {
     const nextSigner = remainingSigners[0];
     await appendAuditLog(documentId, "SIGNER_ADVANCED", {
-      completed_count: allSigners.length - remainingSigners.length,
-      total_signers: allSigners.length,
+      completed_count: signedEmails.size,
+      total_signers: uniqueSigners.length,
       next_signer_email: nextSigner.email,
       next_signing_order: nextSigner.signing_order,
     });

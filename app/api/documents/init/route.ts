@@ -106,6 +106,11 @@ export async function POST(request: NextRequest) {
       creator_webauthn_binding: {
         document_title: document_title || (original_filename ? original_filename.replace(/\.pdf$/i, "") : "電子契約書"),
         original_filename: original_filename || null,
+        creator_name: body.creator_name || null,
+        creator_organization: body.creator_organization || null,
+        creator_address: body.creator_address || null,
+        creator_email: body.creator_email || null,
+        signer_fields: body.signer_fields || null,
       },
       upload_confirmed: false,
       status: "initialized",

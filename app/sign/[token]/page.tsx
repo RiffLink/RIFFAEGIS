@@ -380,6 +380,14 @@ export default function SignerFlowPage({
       if (data.signer_address) {
         setSignerAddress(data.signer_address);
       }
+      if (data.signer_company) {
+        setSignerCompany(data.signer_company);
+      }
+      if (data.signer_title) {
+        setSignerTitle(data.signer_title);
+      } else if (data.signer_custom_value) {
+        setSignerTitle(data.signer_custom_label ? `${data.signer_custom_label}: ${data.signer_custom_value}` : data.signer_custom_value);
+      }
 
       // Cache decryption key to IndexedDB if present in URL
       if (data.document_id && typeof window !== "undefined") {

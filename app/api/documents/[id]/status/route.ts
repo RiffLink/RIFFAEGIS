@@ -72,9 +72,11 @@ export async function GET(
     }
 
     const allSigners = await db.listSignersByDocument(id);
-    const totalSigners = allSigners.length;
-    const completedSigners = allSigners.filter((s) => !!s.signed_at).length;
-    const isAllCompleted = totalSigners > 0 && completedSigners === totalSigners;
+    const uniqueEmails = Array.from(new Set(allSigners.map((s) => s.email.toLowerCase())));
+    const totalSigners = uniqueEmails.length;
+    const signedEmails = new Set(allSigners.filter((s) => !!s.signed_at).map((s) => s.email.toLowerCase()));
+    const completedSigners = signedEmails.size;
+    const isAllCompleted = totalSigners > 0 && completedSigners >= totalSigners;
 
     return NextResponse.json({
       document_id: document.id,

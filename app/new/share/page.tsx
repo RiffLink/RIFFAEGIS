@@ -33,8 +33,12 @@ function ShareContent() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
   const [emailSendError, setEmailSendError] = useState<string | null>(null);
+  const isActivatingRef = useRef(false);
 
   const activateDocument = useCallback(async () => {
+    if (isActivatingRef.current) return;
+    isActivatingRef.current = true;
+
     const token = sessionStorage.getItem(`riff_doc_token_${documentId}`);
     const tempAesKey = sessionStorage.getItem("riffaegis_temp_aes_key");
     const signerEmail = sessionStorage.getItem("riffaegis_temp_signer_email");
@@ -42,6 +46,7 @@ function ShareContent() {
     if (!token || !tempAesKey) {
       setError("セッション情報が失われました。初めからやり直してください。");
       setIsActivating(false);
+      isActivatingRef.current = false;
       return;
     }
 

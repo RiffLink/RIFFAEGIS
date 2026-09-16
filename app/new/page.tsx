@@ -49,6 +49,10 @@ interface SignerInput {
   email: string;
   name?: string;
   address?: string;
+  company?: string;
+  title?: string;
+  custom_label?: string;
+  custom_value?: string;
   role: "signer" | "witness" | "approver";
 }
 
@@ -154,15 +158,21 @@ export default function NewDocumentPage() {
     });
   };
 
-  const updatePartyBField = (key: string, val: string) => {
+  const updatePartyField = (partyIdx: number, key: string, val: string) => {
     setFusionConfig((prev) => {
       const newParties = [...prev.parties];
-      if (!newParties[1]) return prev;
-      newParties[1].fields = newParties[1].fields.map((f) =>
-        f.key === key ? { ...f, value: val } : f
+      if (!newParties[partyIdx]) return prev;
+      const targetParty = { ...newParties[partyIdx] };
+      targetParty.fields = targetParty.fields.map((f) =>
+        f.key === key ? { ...f, value: val, enabled: !!val || f.enabled } : f
       );
+      newParties[partyIdx] = targetParty;
       return { ...prev, parties: newParties };
     });
+  };
+
+  const updatePartyBField = (key: string, val: string) => {
+    updatePartyField(1, key, val);
   };
 
   const addSigner = () => {
@@ -173,7 +183,7 @@ export default function NewDocumentPage() {
 
     setSigners((prev) => [
       ...prev,
-      { id: newId, email: "", name: "", address: "", role: "signer" },
+      { id: newId, email: "", name: "", address: "", company: "", title: "", role: "signer" },
     ]);
 
     // Add corresponding party config
@@ -203,17 +213,49 @@ export default function NewDocumentPage() {
 
   const updateSigner = (
     id: string,
-    field: "email" | "role" | "name" | "address",
+    field: "email" | "role" | "name" | "address" | "company" | "title",
     val: string
   ) => {
+    const signerIdx = signers.findIndex((s) => s.id === id);
     setSigners((prev) =>
       prev.map((s) => (s.id === id ? { ...s, [field]: val } : s))
     );
-    if (field === "name") {
-      updatePartyBField("name", val);
-    } else if (field === "address") {
-      updatePartyBField("address", val);
+    if (signerIdx !== -1 && ["name", "address", "company", "title"].includes(field)) {
+      updatePartyField(signerIdx + 1, field, val);
     }
+  };
+
+  const handleFusionConfigChange = (newConfig: SignatureFusionConfig) => {
+    setFusionConfig(newConfig);
+
+    // Sync Party A info if changed
+    const partyA = newConfig.parties[0];
+    if (partyA) {
+      for (const f of partyA.fields) {
+        if (f.key === "company" && f.value !== creatorOrg) setCreatorOrg(f.value);
+        if (f.key === "name" && f.value !== creatorName) setCreatorName(f.value);
+        if (f.key === "address" && f.value !== creatorAddress) setCreatorAddress(f.value);
+      }
+    }
+
+    // Sync Party B+ info into signers
+    setSigners((prev) => {
+      return prev.map((s, idx) => {
+        const party = newConfig.parties[idx + 1];
+        if (!party) return s;
+        let name = s.name;
+        let address = s.address;
+        let company = s.company;
+        let title = s.title;
+        for (const f of party.fields) {
+          if (f.key === "name") name = f.value;
+          if (f.key === "address") address = f.value;
+          if (f.key === "company") company = f.value;
+          if (f.key === "title") title = f.value;
+        }
+        return { ...s, name, address, company, title };
+      });
+    });
   };
 
   const handleFileChange = async (selectedFile: File) => {
@@ -317,12 +359,45 @@ export default function NewDocumentPage() {
         encResult.originalSha3_512
       );
 
+      // Extract signer fields from fusionConfig.parties for each signer:
+      const enrichedSigners = signers.map((s, idx) => {
+        const party = fusionConfig.parties[idx + 1];
+        let company = s.company || "";
+        let title = s.title || "";
+        let name = s.name || "";
+        let address = s.address || "";
+        let custom_label = s.custom_label || "";
+        let custom_value = s.custom_value || "";
+
+        if (party && party.fields) {
+          for (const f of party.fields) {
+            if (f.key === "company" && f.value) company = f.value;
+            if (f.key === "title" && f.value) title = f.value;
+            if (f.key === "name" && f.value) name = f.value;
+            if (f.key === "address" && f.value) address = f.value;
+            if (f.key === "custom" && f.value) {
+              custom_label = f.label || "";
+              custom_value = f.value;
+            }
+          }
+        }
+        return {
+          ...s,
+          name: name || s.name || "",
+          address: address || s.address || "",
+          company: company || s.company || "",
+          title: title || s.title || "",
+          custom_label,
+          custom_value,
+        };
+      });
+
       // Store in sessionStorage temporarily for Step 2
       sessionStorage.setItem("riffaegis_temp_aes_key", keyBase64Url);
       sessionStorage.setItem("riffaegis_temp_mldsa_sk", bytesToBase64(identityKeyPair.secretKey));
       sessionStorage.setItem("riffaegis_temp_mldsa_pk", bytesToBase64(identityKeyPair.publicKey));
-      sessionStorage.setItem("riffaegis_temp_signer_email", signers[0]?.email || "");
-      sessionStorage.setItem("riffaegis_temp_signers", JSON.stringify(signers));
+      sessionStorage.setItem("riffaegis_temp_signer_email", enrichedSigners[0]?.email || "");
+      sessionStorage.setItem("riffaegis_temp_signers", JSON.stringify(enrichedSigners));
       sessionStorage.setItem(
         "riffaegis_temp_creator_profile",
         JSON.stringify({ creatorOrg, creatorName, creatorAddress, creatorEmail })
@@ -347,6 +422,10 @@ export default function NewDocumentPage() {
           original_sha3_512: encResult.originalSha3_512,
           file_size_bytes: encResult.fileSizeBytes,
           creator_email: creatorEmail || "creator@local",
+          creator_name: creatorName,
+          creator_organization: creatorOrg,
+          creator_address: creatorAddress,
+          signer_fields: enrichedSigners,
           creator_ml_dsa_public_key: bytesToBase64(identityKeyPair.publicKey),
           creator_ml_dsa_signature: bytesToBase64(mlDsaSignature),
           document_title: documentTitle || file.name.replace(/\.pdf$/i, ""),
@@ -579,7 +658,7 @@ export default function NewDocumentPage() {
         {/* Smart Signature Sheet Configurator (Party Info, Custom Fields, Placement) */}
         <SignatureSheetConfigurator
           config={fusionConfig}
-          onChange={setFusionConfig}
+          onChange={handleFusionConfigChange}
           pdfBytes={fileBytes}
           docTitle={documentTitle}
           markdownContent={contractMarkdown}
@@ -695,7 +774,7 @@ export default function NewDocumentPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                        相手の氏名／法人名（任意）
+                        相手の氏名／代表者名（任意）
                       </label>
                       <input
                         type="text"
@@ -707,13 +786,40 @@ export default function NewDocumentPage() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                        相手の住所（任意）
+                        相手の住所（所在地又は居住地）（任意）
                       </label>
                       <input
                         type="text"
                         placeholder="空欄の場合、相手が署名時に入力"
                         value={s.address || ""}
                         onChange={(e) => updateSigner(s.id, "address", e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                        所属組織／法人名／大学名（任意）
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="例: 株式会社〇〇 / 〇〇大学"
+                        value={s.company || ""}
+                        onChange={(e) => updateSigner(s.id, "company", e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                        役職／学籍番号／肩書（任意）
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="例: 代表取締役 / 学籍番号: 2026AB1234"
+                        value={s.title || ""}
+                        onChange={(e) => updateSigner(s.id, "title", e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
                       />
                     </div>
