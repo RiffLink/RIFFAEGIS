@@ -66,6 +66,12 @@ export default function SignerFlowPage({
   const [signerAddress, setSignerAddress] = useState<string>("");
   const [signerCompany, setSignerCompany] = useState<string>("");
   const [signerTitle, setSignerTitle] = useState<string>("");
+  const [signerCustomLabel, setSignerCustomLabel] = useState<string>("");
+  const [signerCustomValue, setSignerCustomValue] = useState<string>("");
+  const [hasCompany, setHasCompany] = useState<boolean>(false);
+  const [hasTitle, setHasTitle] = useState<boolean>(false);
+  const [hasAddress, setHasAddress] = useState<boolean>(true);
+  const [requireAddress, setRequireAddress] = useState<boolean>(true);
   const [authLevel, setAuthLevel] = useState<"high_webauthn" | "medium_security_key" | "low_fallback">("high_webauthn");
   const [isSigning, setIsSigning] = useState<boolean>(false);
   const [rejectReason, setRejectReason] = useState<string>("");
@@ -388,6 +394,24 @@ export default function SignerFlowPage({
       } else if (data.signer_custom_value) {
         setSignerTitle(data.signer_custom_label ? `${data.signer_custom_label}: ${data.signer_custom_value}` : data.signer_custom_value);
       }
+      if (data.signer_custom_label) {
+        setSignerCustomLabel(data.signer_custom_label);
+      }
+      if (data.signer_custom_value) {
+        setSignerCustomValue(data.signer_custom_value);
+      }
+      if (data.has_company !== undefined) {
+        setHasCompany(!!data.has_company);
+      }
+      if (data.has_title !== undefined) {
+        setHasTitle(!!data.has_title);
+      }
+      if (data.has_address !== undefined) {
+        setHasAddress(!!data.has_address);
+      }
+      if (data.require_address !== undefined) {
+        setRequireAddress(!!data.require_address);
+      }
 
       // Cache decryption key to IndexedDB if present in URL
       if (data.document_id && typeof window !== "undefined") {
@@ -511,8 +535,31 @@ export default function SignerFlowPage({
   }, [step, downloadUrl, aesKeyStr, decryptedPdfBytes, isDecrypting, handleDecryptDocument]);
 
   const handleConsent = async () => {
-    setIsSigning(true);
     setError(null);
+
+    // Validate required fields
+    if (!signerName.trim()) {
+      setError("氏名（又は代表者名）を入力してください。");
+      return;
+    }
+    if (hasAddress && requireAddress && !signerAddress.trim()) {
+      setError("住所（所在地又は居住地）を入力してください。");
+      return;
+    }
+    if (hasCompany && !signerCompany.trim()) {
+      setError("所属組織／法人名を入力してください。");
+      return;
+    }
+    if (hasTitle && !signerTitle.trim()) {
+      setError("役職／肩書を入力してください。");
+      return;
+    }
+    if (signerCustomLabel && !signerCustomValue.trim()) {
+      setError(`${signerCustomLabel}を入力してください。`);
+      return;
+    }
+
+    setIsSigning(true);
     try {
       let credResponse = null;
 
@@ -548,9 +595,9 @@ export default function SignerFlowPage({
           credential_response: credResponse,
           auth_level: authLevel,
           signer_name: signerName.trim() || undefined,
-          signer_address: signerAddress.trim() || undefined,
-          signer_company: signerCompany.trim() || undefined,
-          signer_title: signerTitle.trim() || undefined,
+          signer_address: (hasAddress && signerAddress.trim()) ? signerAddress.trim() : undefined,
+          signer_company: (hasCompany && signerCompany.trim()) ? signerCompany.trim() : undefined,
+          signer_title: (hasTitle && signerTitle.trim()) ? signerTitle.trim() : (signerCustomValue.trim() || undefined),
           mock: authLevel !== "low_fallback" && !credResponse,
         }),
       });
@@ -876,17 +923,19 @@ export default function SignerFlowPage({
             </p>
           </div>
 
-          {/* Signer Identity Input */}
+          {/* Signer Identity Information */}
           <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                 <User className="w-3.5 h-3.5 text-[#0284c7]" />
                 <span>署名者情報（合意締結証明書に公式印字されます）</span>
               </label>
-              <span className="text-[10px] text-slate-400">氏名・住所の確認</span>
+              <span className="text-[10px] text-slate-400">
+                {hasAddress ? "氏名・住所の確認" : "氏名の確認"}
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className={`grid grid-cols-1 ${hasAddress ? "sm:grid-cols-2" : ""} gap-3`}>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                   氏名（又は代表者名） <span className="text-rose-500">*</span>
@@ -900,47 +949,72 @@ export default function SignerFlowPage({
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  住所（所在地又は居住地）
-                </label>
-                <input
-                  type="text"
-                  placeholder="例: 東京都渋谷区..."
-                  value={signerAddress}
-                  onChange={(e) => setSignerAddress(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-[#70D6FF]"
-                />
-              </div>
+              {hasAddress && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    住所（所在地又は居住地） {requireAddress && <span className="text-rose-500">*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例: 東京都渋谷区..."
+                    value={signerAddress}
+                    onChange={(e) => setSignerAddress(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-[#70D6FF]"
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  所属組織／法人名／大学名（任意）
-                </label>
-                <input
-                  type="text"
-                  placeholder="例: 株式会社〇〇 / 〇〇大学"
-                  value={signerCompany}
-                  onChange={(e) => setSignerCompany(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-[#70D6FF]"
-                />
-              </div>
+            {/* Optional / Enabled Org & Title fields (Only rendered if creator enabled them!) */}
+            {(hasCompany || hasTitle) && (
+              <div className={`grid grid-cols-1 ${hasCompany && hasTitle ? "sm:grid-cols-2" : ""} gap-3 pt-1`}>
+                {hasCompany && (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      所属組織／法人名／大学名 <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="例: 株式会社〇〇 / 〇〇大学"
+                      value={signerCompany}
+                      onChange={(e) => setSignerCompany(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-[#70D6FF]"
+                    />
+                  </div>
+                )}
 
-              <div>
+                {hasTitle && (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      役職／学籍番号／肩書 <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="例: 代表取締役 / 学籍番号: 2026AB1234"
+                      value={signerTitle}
+                      onChange={(e) => setSignerTitle(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-[#70D6FF]"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Custom Field (if configured by creator) */}
+            {signerCustomLabel && (
+              <div className="pt-1">
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  役職／学籍番号／肩書（任意）
+                  {signerCustomLabel} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="例: 代表取締役 / 学籍番号: 2026AB1234"
-                  value={signerTitle}
-                  onChange={(e) => setSignerTitle(e.target.value)}
+                  placeholder={`${signerCustomLabel}を入力`}
+                  value={signerCustomValue}
+                  onChange={(e) => setSignerCustomValue(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-[#70D6FF]"
                 />
               </div>
-            </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

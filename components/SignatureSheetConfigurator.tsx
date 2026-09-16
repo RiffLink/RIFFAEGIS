@@ -535,6 +535,19 @@ export default function SignatureSheetConfigurator({
                     </span>
                   )}
 
+                  {/* Required / Enabled status badge for signers (Party B, etc.) */}
+                  {activePartyIdx > 0 && (
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${
+                        field.enabled
+                          ? "bg-rose-50 text-rose-600 border-rose-200"
+                          : "bg-slate-100 text-slate-400 border-slate-200"
+                      }`}
+                    >
+                      {field.enabled ? "署名時必須" : "非表示"}
+                    </span>
+                  )}
+
                   {/* Field Value Input */}
                   <input
                     type="text"

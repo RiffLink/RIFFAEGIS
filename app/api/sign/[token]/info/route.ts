@@ -99,6 +99,11 @@ export async function GET(
       (sf: any) => sf.email?.toLowerCase() === signer.email?.toLowerCase()
     ) || signerFieldsList[0] || {};
 
+    const hasCompany = !!matchedSignerFields.has_company || (typeof matchedSignerFields.company === "string" && matchedSignerFields.company.trim() !== "");
+    const hasTitle = !!matchedSignerFields.has_title || (typeof matchedSignerFields.title === "string" && matchedSignerFields.title.trim() !== "");
+    const hasAddress = matchedSignerFields.has_address !== undefined ? !!matchedSignerFields.has_address : true;
+    const requireAddress = matchedSignerFields.require_address !== undefined ? !!matchedSignerFields.require_address : hasAddress;
+
     return NextResponse.json({
       document_id: document.id,
       document_title: documentTitle,
@@ -117,6 +122,10 @@ export async function GET(
       signer_title: matchedSignerFields.title || null,
       signer_custom_label: matchedSignerFields.custom_label || null,
       signer_custom_value: matchedSignerFields.custom_value || null,
+      has_company: hasCompany,
+      has_title: hasTitle,
+      has_address: hasAddress,
+      require_address: requireAddress,
       requires_otp: !signer.identity_auth_verified_at,
       already_signed: isAlreadySigned,
       total_signers: totalSigners,

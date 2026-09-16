@@ -362,6 +362,9 @@ export default function NewDocumentPage() {
       // Extract signer fields from fusionConfig.parties for each signer:
       const enrichedSigners = signers.map((s, idx) => {
         const party = fusionConfig.parties[idx + 1];
+        const partyFields = party?.fields || [];
+        const activeFields = party ? partyFields.filter((f) => f.enabled) : [];
+
         let company = s.company || "";
         let title = s.title || "";
         let name = s.name || "";
@@ -381,6 +384,12 @@ export default function NewDocumentPage() {
             }
           }
         }
+
+        const hasCompany = activeFields.some((f) => f.key === "company") || !!company.trim();
+        const hasTitle = activeFields.some((f) => f.key === "title") || !!title.trim();
+        const hasAddress = activeFields.length > 0 ? activeFields.some((f) => f.key === "address") : true;
+        const hasName = activeFields.length > 0 ? activeFields.some((f) => f.key === "name") : true;
+
         return {
           ...s,
           name: name || s.name || "",
@@ -389,6 +398,11 @@ export default function NewDocumentPage() {
           title: title || s.title || "",
           custom_label,
           custom_value,
+          has_name: hasName,
+          has_address: hasAddress,
+          require_address: hasAddress,
+          has_company: hasCompany,
+          has_title: hasTitle,
         };
       });
 
@@ -798,32 +812,40 @@ export default function NewDocumentPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                        所属組織／法人名／大学名（任意）
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="例: 株式会社〇〇 / 〇〇大学"
-                        value={s.company || ""}
-                        onChange={(e) => updateSigner(s.id, "company", e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
-                      />
+                  {/* Only display company and title if enabled in fusionConfig */}
+                  {(fusionConfig.parties[idx + 1]?.fields.some((f) => f.key === "company" && f.enabled) ||
+                    fusionConfig.parties[idx + 1]?.fields.some((f) => f.key === "title" && f.enabled)) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {fusionConfig.parties[idx + 1]?.fields.some((f) => f.key === "company" && f.enabled) && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                            所属組織／法人名／大学名（任意）
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="例: 株式会社〇〇 / 〇〇大学"
+                            value={s.company || ""}
+                            onChange={(e) => updateSigner(s.id, "company", e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
+                          />
+                        </div>
+                      )}
+                      {fusionConfig.parties[idx + 1]?.fields.some((f) => f.key === "title" && f.enabled) && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                            役職／学籍番号／肩書（任意）
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="例: 代表取締役 / 学籍番号: 2026AB1234"
+                            value={s.title || ""}
+                            onChange={(e) => updateSigner(s.id, "title", e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                        役職／学籍番号／肩書（任意）
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="例: 代表取締役 / 学籍番号: 2026AB1234"
-                        value={s.title || ""}
-                        onChange={(e) => updateSigner(s.id, "title", e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:outline-none focus:border-[#70D6FF]"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
