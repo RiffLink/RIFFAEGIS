@@ -7,6 +7,7 @@ export const dynamic = 'force-static';
 
 export async function GET() {
   const fontCandidates = [
+    path.join(process.cwd(), 'public/fonts/ipaexg.ttf'),
     path.join(process.cwd(), 'public/fonts/NotoSansJP-Regular.ttf'),
     '/System/Library/Fonts/Supplemental/AppleGothic.ttf',
     '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',

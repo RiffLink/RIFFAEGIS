@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { DocumentRecord, SignerRecord, AuditLogRecord } from "./types";
 import { AtomicTimeResult } from "./nict";
+import { sanitizeTextForPdf } from "../crypto/signature-sheet";
 
 export interface GenerateCertificateParams {
   document: DocumentRecord;
@@ -35,6 +36,7 @@ export async function generateAuditCertificatePdf({
   // Embed Japanese TrueType font with subsetting if available on system
   let fontJp: PDFFont | null = null;
   const jpFontCandidates = [
+    path.join(process.cwd(), "public/fonts/ipaexg.ttf"),
     path.join(process.cwd(), "public/fonts/NotoSansJP-Regular.ttf"),
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
     "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
@@ -159,7 +161,7 @@ export async function generateAuditCertificatePdf({
       color: textMuted,
     });
 
-    const safeVal = String(value ?? "");
+    const safeVal = sanitizeTextForPdf(String(value ?? ""));
     let displayVal = safeVal.length > maxChars ? safeVal.slice(0, maxChars) + "..." : safeVal;
     const fontToUse = (containsNonAscii(displayVal) && fontJp) ? fontJp : (isMono ? fontMono : fontRegular);
     if (!fontJp && containsNonAscii(displayVal)) {

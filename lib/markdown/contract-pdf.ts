@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
-import { loadJapaneseFont } from '../crypto/signature-sheet';
+import { loadJapaneseFont, sanitizeTextForPdf } from '../crypto/signature-sheet';
 
 export interface MarkdownContractOptions {
   title?: string;
@@ -30,10 +30,10 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
   const fontJp = await pdfDoc.embedFont(fontBytes, { subset: true });
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  let contentMarkdown = options.markdown.trim();
+  let contentMarkdown = sanitizeTextForPdf(options.markdown.trim());
   const hasH1 = contentMarkdown.split('\n').some((line) => line.trim().startsWith('# '));
   if (!hasH1 && options.title && options.title.trim()) {
-    contentMarkdown = `# ${options.title.trim()}\n\n` + contentMarkdown;
+    contentMarkdown = `# ${sanitizeTextForPdf(options.title.trim())}\n\n` + contentMarkdown;
   }
 
   const lines = contentMarkdown.split('\n');

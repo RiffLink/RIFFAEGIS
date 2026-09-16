@@ -3,6 +3,42 @@ import fontkit from '@pdf-lib/fontkit';
 import { SignatureFusionConfig } from './signature-types';
 
 /**
+ * Normalizes characters that cannot be represented in PDF font subsetters (such as Plane 2 SIP surrogate pairs)
+ * into their official legal base kanji so that they never disappear or become blank spaces on the PDF.
+ * Note: Characters in the BMP like 髙 (U+9AD9), 﨑 (U+FA11), 德 (U+5FB7), 塚 (U+FA10), 邊 (U+908A), 邉 (U+9089),
+ * 齊 (U+9F47), 齋 (U+9F4B), 櫻 (U+6AFB), 榮 (U+69AE), etc. are supported directly by the font and preserved!
+ */
+export function sanitizeTextForPdf(text: string): string {
+  if (!text) return "";
+  return text
+    // Replace Plane 2 / SIP surrogate pairs with standard kanji
+    .replace(/\uD842\uDFB7|𠮷/g, "吉") // つちよし (U+20BB7) -> 吉
+    .replace(/𡈽/g, "土") // つち (U+2123D)
+    .replace(/𡚴/g, "岡") // おか (U+216B4)
+    .replace(/𥔎/g, "崎") // さき (U+2550E)
+    .replace(/𪚲/g, "亀") // かめ (U+2AA72)
+    .replace(/𠔱/g, "免") // めん (U+20531)
+    .replace(/𡛀/g, "妻") // つま (U+216C0)
+    .replace(/𡿨/g, "川") // かわ (U+21FE8)
+    .replace(/𡏄/g, "嶋") // しま (U+213C4)
+    .replace(/𡘲/g, "奥") // おく (U+21632)
+    .replace(/𢛳/g, "恵") // めぐみ (U+226F3)
+    .replace(/𣘺/g, "橋") // はし (U+2363A)
+    .replace(/𣜿/g, "樋") // ひ (U+2373F)
+    .replace(/𤘩/g, "角") // つの (U+24629)
+    .replace(/𥧄/g, "穀") // こく (U+259C4)
+    .replace(/𦚰/g, "脇") // わき (U+266B0)
+    .replace(/𦝏/g, "脩") // おさむ (U+2674F)
+    .replace(/𧦣/g, "誠") // まこと (U+279A3)
+    .replace(/𨤒/g, "舘") // たて (U+28912)
+    .replace(/𨥆/g, "鐡") // てつ (U+28946)
+    .replace(/𩸽/g, "ほっけ") // ほっけ (U+29E3D)
+    .replace(/𪚥/g, "龍") // てつ (U+2AA25)
+    // Remove zero-width characters and unprintable control chars that break PDF streams
+    .replace(/[\u200B-\u200D\uFEFF]/g, "");
+}
+
+/**
  * Loads Japanese TrueType font bytes from local cache or API/filesystem
  */
 export async function loadJapaneseFont(): Promise<Uint8Array> {
@@ -20,6 +56,7 @@ export async function loadJapaneseFont(): Promise<Uint8Array> {
   const fs = await import('fs');
   const path = await import('path');
   const fontCandidates = [
+    path.join(process.cwd(), 'public/fonts/ipaexg.ttf'),
     path.join(process.cwd(), 'public/fonts/NotoSansJP-Regular.ttf'),
     '/System/Library/Fonts/Supplemental/AppleGothic.ttf',
     '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
@@ -118,7 +155,7 @@ export async function fuseSignatureSheet(
     let currentY = startY - 18;
 
     // Lead text & date
-    lastPage.drawText(leadText, {
+    lastPage.drawText(sanitizeTextForPdf(leadText), {
       x: margin,
       y: currentY,
       size: 8.5,
@@ -127,7 +164,7 @@ export async function fuseSignatureSheet(
     });
     currentY -= 14;
 
-    lastPage.drawText(`締結日： ${agreementDateStr}`, {
+    lastPage.drawText(sanitizeTextForPdf(`締結日： ${agreementDateStr}`), {
       x: margin,
       y: currentY,
       size: 9,
@@ -147,9 +184,11 @@ export async function fuseSignatureSheet(
       const partyStartY = currentY;
 
       // Clean, elegant contract party header: 【甲】 作成者 / プロジェクト代表
-      const partyHeader = party.roleDescription
-        ? `【${party.roleName}】 ${party.roleDescription}`
-        : `【${party.roleName}】`;
+      const partyHeader = sanitizeTextForPdf(
+        party.roleDescription
+          ? `【${party.roleName}】 ${party.roleDescription}`
+          : `【${party.roleName}】`
+      );
       lastPage.drawText(partyHeader, {
         x: colX + 4,
         y: partyStartY - 12,
@@ -160,8 +199,8 @@ export async function fuseSignatureSheet(
 
       let fieldY = partyStartY - 27;
       for (const field of activeFields) {
-        const val = field.value.trim() || '（署名時に確認・入力）';
-        const labelStr = `${field.label}：`;
+        const val = sanitizeTextForPdf(field.value.trim() || '（署名時に確認・入力）');
+        const labelStr = sanitizeTextForPdf(`${field.label}：`);
         lastPage.drawText(labelStr, {
           x: colX + 8,
           y: fieldY,
@@ -260,9 +299,11 @@ export async function fuseSignatureSheet(
       });
 
       // Clean contract header: 【甲】 作成者
-      const partyHeader = party.roleDescription
-        ? `【${party.roleName}】 ${party.roleDescription}`
-        : `【${party.roleName}】`;
+      const partyHeader = sanitizeTextForPdf(
+        party.roleDescription
+          ? `【${party.roleName}】 ${party.roleDescription}`
+          : `【${party.roleName}】`
+      );
       newPage.drawText(partyHeader, {
         x: margin + 16,
         y: currentY - 24,
@@ -273,8 +314,8 @@ export async function fuseSignatureSheet(
 
       let rowY = currentY - 48;
       for (const field of activeFields) {
-        const val = field.value.trim() || '（署名時に確認・入力）';
-        const labelStr = `${field.label}：`;
+        const val = sanitizeTextForPdf(field.value.trim() || '（署名時に確認・入力）');
+        const labelStr = sanitizeTextForPdf(`${field.label}：`);
 
         newPage.drawText(labelStr, {
           x: margin + 20,
