@@ -20,7 +20,7 @@ import { generatePdfFromMarkdown } from "@/lib/markdown/contract-pdf";
 
 interface Props {
   initialTitle?: string;
-  onPdfGenerated: (pdfBytes: Uint8Array, title: string) => void;
+  onPdfGenerated: (pdfBytes: Uint8Array, title: string, rawMarkdown?: string) => void;
 }
 
 interface ContentBlock {
@@ -181,7 +181,7 @@ export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerat
         title: titleToUse,
         markdown,
       });
-      onPdfGenerated(pdfBytes, titleToUse);
+      onPdfGenerated(pdfBytes, titleToUse, markdown);
     } catch (err) {
       console.error("Failed to generate PDF from markdown:", err);
       alert("PDFの生成に失敗しました。");

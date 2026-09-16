@@ -146,46 +146,34 @@ export async function fuseSignatureSheet(
       const colX = isTwoColumns && i === 1 ? margin + colWidth + 20 : margin;
       const partyStartY = currentY;
 
-      // Party header tag
-      lastPage.drawRectangle({
-        x: colX,
-        y: partyStartY - 15,
-        width: 28,
-        height: 15,
-        color: primaryColor,
-        borderWidth: 0,
-      });
-      lastPage.drawText(party.roleName, {
-        x: colX + 8,
-        y: partyStartY - 11,
-        size: 9,
+      // Clean, elegant contract party header: 【甲】 作成者 / プロジェクト代表
+      const partyHeader = party.roleDescription
+        ? `【${party.roleName}】 ${party.roleDescription}`
+        : `【${party.roleName}】`;
+      lastPage.drawText(partyHeader, {
+        x: colX + 4,
+        y: partyStartY - 12,
+        size: 9.5,
         font: fontJp,
-        color: rgb(1, 1, 1),
+        color: textDark,
       });
-
-      if (party.roleDescription) {
-        lastPage.drawText(`（${party.roleDescription}）`, {
-          x: colX + 34,
-          y: partyStartY - 11,
-          size: 8.5,
-          font: fontJp,
-          color: textMuted,
-        });
-      }
 
       let fieldY = partyStartY - 27;
       for (const field of activeFields) {
         const val = field.value.trim() || '（署名時に確認・入力）';
-        lastPage.drawText(`${field.label}：`, {
-          x: colX + 6,
+        const labelStr = `${field.label}：`;
+        lastPage.drawText(labelStr, {
+          x: colX + 8,
           y: fieldY,
           size: 8.5,
           font: fontJp,
           color: textMuted,
         });
-        // Left-aligned value offset
+        
+        // Dynamically position value right after the label to maximize horizontal writing space
+        const labelWidth = fontJp.widthOfTextAtSize(labelStr, 8.5);
         lastPage.drawText(val, {
-          x: colX + 110,
+          x: colX + 8 + labelWidth + 4,
           y: fieldY,
           size: 8.5,
           font: fontJp,
@@ -271,35 +259,24 @@ export async function fuseSignatureSheet(
         borderWidth: 1,
       });
 
-      // Role badge
-      newPage.drawRectangle({
-        x: margin + 14,
-        y: currentY - 26,
-        width: 34,
-        height: 18,
-        color: primaryColor,
-      });
-      newPage.drawText(party.roleName, {
-        x: margin + 23,
-        y: currentY - 22,
-        size: 10,
+      // Clean contract header: 【甲】 作成者
+      const partyHeader = party.roleDescription
+        ? `【${party.roleName}】 ${party.roleDescription}`
+        : `【${party.roleName}】`;
+      newPage.drawText(partyHeader, {
+        x: margin + 16,
+        y: currentY - 24,
+        size: 11,
         font: fontJp,
-        color: rgb(1, 1, 1),
-      });
-
-      newPage.drawText(party.roleDescription ? `【${party.roleDescription}】` : '', {
-        x: margin + 55,
-        y: currentY - 22,
-        size: 9.5,
-        font: fontJp,
-        color: textMuted,
+        color: textDark,
       });
 
       let rowY = currentY - 48;
       for (const field of activeFields) {
         const val = field.value.trim() || '（署名時に確認・入力）';
+        const labelStr = `${field.label}：`;
 
-        newPage.drawText(field.label, {
+        newPage.drawText(labelStr, {
           x: margin + 20,
           y: rowY,
           size: 9,
@@ -307,8 +284,9 @@ export async function fuseSignatureSheet(
           color: textMuted,
         });
 
+        const labelWidth = fontJp.widthOfTextAtSize(labelStr, 9);
         newPage.drawText(val, {
-          x: margin + 120,
+          x: margin + 20 + labelWidth + 6,
           y: rowY,
           size: 9.5,
           font: fontJp,

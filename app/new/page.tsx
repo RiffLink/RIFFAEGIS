@@ -58,6 +58,7 @@ export default function NewDocumentPage() {
 
   // Creation Mode: 'upload' | 'markdown'
   const [creationMode, setCreationMode] = useState<"upload" | "markdown">("upload");
+  const [contractMarkdown, setContractMarkdown] = useState<string>("");
 
   const [file, setFile] = useState<File | null>(null);
   const [fileBytes, setFileBytes] = useState<Uint8Array | null>(null);
@@ -237,13 +238,16 @@ export default function NewDocumentPage() {
     }
   };
 
-  const handleMarkdownPdfGenerated = (pdfBytes: Uint8Array, title: string) => {
+  const handleMarkdownPdfGenerated = (pdfBytes: Uint8Array, title: string, rawMarkdown?: string) => {
     const generatedFile = new File([pdfBytes as any], `${title}.pdf`, {
       type: "application/pdf",
     });
     setFile(generatedFile);
     setFileBytes(pdfBytes);
     setDocumentTitle(title);
+    if (rawMarkdown) {
+      setContractMarkdown(rawMarkdown);
+    }
     setCreationMode("upload"); // switch back to confirmation view with generated PDF
   };
 
@@ -574,6 +578,7 @@ export default function NewDocumentPage() {
           onChange={setFusionConfig}
           pdfBytes={fileBytes}
           docTitle={documentTitle}
+          markdownContent={contractMarkdown}
         />
 
         {/* Creator & Multi-Signers Inputs */}
