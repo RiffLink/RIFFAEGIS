@@ -23,12 +23,14 @@ import {
 interface Props {
   config: SignatureFusionConfig;
   onChange: (newConfig: SignatureFusionConfig) => void;
+  pdfBytes?: Uint8Array | null;
+  docTitle?: string;
 }
 
-export default function SignatureSheetConfigurator({ config, onChange }: Props) {
+export default function SignatureSheetConfigurator({ config, onChange, pdfBytes, docTitle }: Props) {
   const [newCustomLabel, setNewCustomLabel] = useState("");
   const [activePartyIdx, setActivePartyIdx] = useState<number>(0);
-  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [showPreview, setShowPreview] = useState<boolean>(true); // Show by default for instant visual feedback
 
   const toggleEnabled = () => {
     onChange({ ...config, enabled: !config.enabled });
@@ -247,6 +249,60 @@ export default function SignatureSheetConfigurator({ config, onChange }: Props) 
             </div>
           </div>
 
+          {/* Party Layout Mode (Stacked vs Columns) */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <LayoutTemplate className="w-3.5 h-3.5 text-[#0284c7]" />
+              当事者（甲・乙）の並び順
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => onChange({ ...config, layoutMode: 'stacked' })}
+                className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
+                  config.layoutMode !== 'columns'
+                    ? "bg-blue-50/70 border-[#0284c7] ring-2 ring-[#0284c7]/20 shadow-sm"
+                    : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div>
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>縦2段（上段：甲 / 下段：乙）</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 bg-[#0284c7] text-white rounded">推奨</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    長い会社名や住所も切れずに一行で美しく整列します。
+                  </p>
+                </div>
+                {config.layoutMode !== 'columns' && (
+                  <Check className="w-4 h-4 text-[#0284c7] shrink-0 ml-2" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onChange({ ...config, layoutMode: 'columns' })}
+                className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
+                  config.layoutMode === 'columns'
+                    ? "bg-blue-50/70 border-[#0284c7] ring-2 ring-[#0284c7]/20 shadow-sm"
+                    : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div>
+                  <span className="text-xs font-bold text-slate-900">
+                    横2列（左：甲 / 右：乙）
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    コンパクトに左右並列で配置します。
+                  </p>
+                </div>
+                {config.layoutMode === 'columns' && (
+                  <Check className="w-4 h-4 text-[#0284c7] shrink-0 ml-2" />
+                )}
+              </button>
+            </div>
+          </div>
+
           {/* Agreement Date Setting (with Calendar picker) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <div>
@@ -461,60 +517,114 @@ export default function SignatureSheetConfigurator({ config, onChange }: Props) 
 
           {/* Toggleable Preview */}
           {showPreview && (
-            <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="p-5 bg-slate-100 border border-slate-200/80 rounded-2xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  署名ブロック リアルタイムプレビュー
+                  <span>A4用紙 最終ページ・仕上がりプレビュー</span>
                 </span>
-                <span className="text-[11px] font-bold text-[#0284c7] bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
-                  {config.placement === 'inline_margin' ? '最終ページ下部に合成' : '末尾に新規1ページ付加'}
-                </span>
-              </div>
-
-              <div className="border border-slate-200 bg-white text-slate-900 rounded-xl p-4 text-[11px] font-sans shadow-sm">
-                <div className="border-b border-slate-200 pb-2 mb-3 flex justify-between items-baseline">
-                  <span className="text-slate-500 text-[10px]">
-                    本契約の成立を証するため、電磁的記録を作成し電子署名を施す。
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-[#0284c7] bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
+                    {config.placement === 'inline_margin' ? '最終ページ下部に合成（1枚に集約）' : '末尾に新規1ページ付加'}
                   </span>
-                  <span className="font-bold text-slate-800 text-[11px]">
-                    {config.agreementDateType === 'custom' && config.customAgreementDate
-                      ? config.customAgreementDate
-                      : '契約締結日： 署名完了日に自動設定'}
+                  <span className="text-[10px] text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-md font-mono">
+                    {config.layoutMode === 'columns' ? '横2列配置' : '縦2段配置（推奨）'}
                   </span>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {config.parties.map((party, pIdx) => {
-                    const activeFields = party.fields.filter((f) => f.enabled);
-                    return (
-                      <div
-                        key={pIdx}
-                        className="border border-slate-200 rounded-xl p-3 bg-slate-50/80 space-y-1"
-                      >
-                        <div className="font-bold text-slate-900 border-b border-slate-200 pb-1 flex items-center gap-1.5">
-                          <span className="px-1.5 py-0.5 bg-[#0284c7] text-white rounded text-[10px] font-bold">
-                            {party.roleName}
-                          </span>
-                          <span className="text-xs text-slate-600">
-                            {party.roleDescription || (pIdx === 0 ? "作成者" : "署名者")}
-                          </span>
-                        </div>
-                        {activeFields.length === 0 ? (
-                          <p className="text-slate-400 italic text-[10px]">項目が選択されていません</p>
-                        ) : (
-                          activeFields.map((f) => (
-                            <div key={f.id} className="flex justify-between text-[11px] pt-0.5">
-                              <span className="text-slate-500">{f.label}：</span>
-                              <span className="font-bold text-slate-800 truncate max-w-[150px]">
-                                {f.value || '（署名時に確認・入力）'}
-                              </span>
-                            </div>
-                          ))
-                        )}
+              {/* A4 Sheet Simulator */}
+              <div className="flex justify-center py-2">
+                <div
+                  className="w-full max-w-[620px] bg-white text-slate-900 rounded-lg p-6 sm:p-10 shadow-lg font-serif text-xs leading-relaxed relative flex flex-col justify-between border border-slate-300"
+                  style={{ minHeight: "680px" }}
+                >
+                  {/* Top: Mock of Previous Contract Articles */}
+                  <div className="space-y-3 pb-6 text-slate-400 select-none border-b border-dashed border-slate-200">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-sans">
+                      <span>{docTitle || "電子契約書"}</span>
+                      <span className="font-mono">Page Final</span>
+                    </div>
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-slate-400 text-[11px]">
+                        …（前略：契約条文本文）…
+                      </p>
+                      <p className="text-slate-500 text-[11px] font-sans font-medium">
+                        第10条（協議及び合意管轄） 本契約に関して生じた一切の紛争については、甲の住所地を管轄する地方裁判所又は簡易裁判所を第一審の専属的合意管轄裁判所とする。
+                      </p>
+                      <p className="text-slate-400 text-[11px]">
+                        本契約の成立を証するため、本書の電磁的原本を作成し、甲及び乙がそれぞれ電磁的合意の意思表示を行う。
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Signature Fusion Block */}
+                  <div className="pt-4 space-y-3">
+                    <div className="flex items-center justify-between text-[10px] font-sans text-[#0284c7] font-bold pb-1">
+                      <span className="flex items-center gap-1">
+                        <span>▼</span>
+                        <span>
+                          {config.placement === 'inline_margin'
+                            ? '最終ページ下部に自動合成される署名ブロック'
+                            : '末尾に新規追加される専用調印シート'}
+                        </span>
+                      </span>
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        {config.placement === 'inline_margin'
+                          ? '✅ 下部余白に綺麗に収まります'
+                          : '📄 専用ページとして追加'}
+                      </span>
+                    </div>
+
+                    <div className="border border-slate-200 bg-slate-50/60 text-slate-900 rounded-xl p-4 text-[11px] font-sans shadow-xs space-y-3">
+                      <div className="border-b border-slate-200 pb-2 flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-1">
+                        <span className="text-slate-600 text-[10px]">
+                          {config.leadText || "本契約の成立を証するため、電磁的記録を作成し電子署名を施す。"}
+                        </span>
+                        <span className="font-bold text-slate-800 text-[11px] shrink-0">
+                          {config.agreementDateType === 'custom' && config.customAgreementDate
+                            ? config.customAgreementDate
+                            : '契約締結日： 署名完了日に自動設定'}
+                        </span>
                       </div>
-                    );
-                  })}
+
+                      {/* Party Cards: Stacked (Default) or 2-Columns */}
+                      <div className={config.layoutMode === 'columns' ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "space-y-2.5"}>
+                        {config.parties.map((party, pIdx) => {
+                          const activeFields = party.fields.filter((f) => f.enabled);
+                          return (
+                            <div
+                              key={pIdx}
+                              className="border border-slate-200/90 rounded-xl p-3.5 bg-white space-y-1.5 shadow-xs"
+                            >
+                              <div className="font-bold text-slate-900 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 bg-[#0284c7] text-white rounded text-[10px] font-bold">
+                                  {party.roleName}
+                                </span>
+                                <span className="text-xs text-slate-700">
+                                  {party.roleDescription || (pIdx === 0 ? "作成者" : "署名者")}
+                                </span>
+                              </div>
+                              {activeFields.length === 0 ? (
+                                <p className="text-slate-400 italic text-[10px]">項目が選択されていません</p>
+                              ) : (
+                                activeFields.map((f) => (
+                                  <div key={f.id} className="flex items-baseline text-[11px] py-0.5 border-b border-slate-50 last:border-0">
+                                    <span className="text-slate-500 w-36 sm:w-44 shrink-0 text-left font-medium">
+                                      {f.label}：
+                                    </span>
+                                    <span className="font-bold text-slate-900 text-left break-all flex-1">
+                                      {f.value || '（署名時に確認・入力）'}
+                                    </span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -18,6 +18,7 @@ export type SignaturePlacement = 'inline_margin' | 'new_page';
 export interface SignatureFusionConfig {
   enabled: boolean;
   placement: SignaturePlacement;
+  layoutMode?: 'stacked' | 'columns'; // 'stacked' (vertical 2-tier: Party A on top, Party B below) or 'columns' (side-by-side)
   inlineMarginOffset: number; // 0 (bottom) to 100 pt
   agreementDateType: 'auto_on_sign' | 'custom';
   customAgreementDate?: string;

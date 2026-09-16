@@ -38,10 +38,22 @@ export async function loadJapaneseFont(): Promise<Uint8Array> {
  * Calculate the total height required for the signature block
  */
 export function calculateSignatureBlockHeight(config: SignatureFusionConfig): number {
-  let height = 60; // header / date
-  for (const party of config.parties) {
-    const activeFields = party.fields.filter((f) => f.enabled);
-    height += 28 + activeFields.length * 16 + 10;
+  let height = 48; // header / date
+  const isTwoColumns = config.layoutMode === 'columns' && config.parties.length === 2;
+
+  if (isTwoColumns) {
+    let maxPartyHeight = 0;
+    for (const party of config.parties) {
+      const activeFields = party.fields.filter((f) => f.enabled);
+      const partyH = 24 + activeFields.length * 15;
+      if (partyH > maxPartyHeight) maxPartyHeight = partyH;
+    }
+    height += maxPartyHeight + 10;
+  } else {
+    for (const party of config.parties) {
+      const activeFields = party.fields.filter((f) => f.enabled);
+      height += 24 + activeFields.length * 15 + 8;
+    }
   }
   return height;
 }
@@ -122,47 +134,46 @@ export async function fuseSignatureSheet(
       font: fontJp,
       color: textDark,
     });
-    currentY -= 20;
+    currentY -= 18;
 
-    // Parties side-by-side or stacked
-    // If 2 parties and contentWidth > 450, render side-by-side columns
-    const isTwoColumns = config.parties.length === 2 && contentWidth >= 440;
+    // Default to stacked (vertical 2-tier: Party A on top, Party B below)
+    const isTwoColumns = config.layoutMode === 'columns' && config.parties.length === 2 && contentWidth >= 440;
     const colWidth = isTwoColumns ? (contentWidth - 20) / 2 : contentWidth;
 
     for (let i = 0; i < config.parties.length; i++) {
       const party = config.parties[i];
       const activeFields = party.fields.filter((f) => f.enabled);
       const colX = isTwoColumns && i === 1 ? margin + colWidth + 20 : margin;
-      const partyStartY = isTwoColumns ? currentY : currentY;
+      const partyStartY = currentY;
 
       // Party header tag
       lastPage.drawRectangle({
         x: colX,
-        y: partyStartY - 16,
-        width: 32,
-        height: 16,
+        y: partyStartY - 15,
+        width: 28,
+        height: 15,
         color: primaryColor,
         borderWidth: 0,
       });
       lastPage.drawText(party.roleName, {
-        x: colX + 9,
-        y: partyStartY - 12,
-        size: 9.5,
+        x: colX + 8,
+        y: partyStartY - 11,
+        size: 9,
         font: fontJp,
         color: rgb(1, 1, 1),
       });
 
       if (party.roleDescription) {
         lastPage.drawText(`（${party.roleDescription}）`, {
-          x: colX + 38,
-          y: partyStartY - 12,
+          x: colX + 34,
+          y: partyStartY - 11,
           size: 8.5,
           font: fontJp,
           color: textMuted,
         });
       }
 
-      let fieldY = partyStartY - 30;
+      let fieldY = partyStartY - 27;
       for (const field of activeFields) {
         const val = field.value.trim() || '（署名時に確認・入力）';
         lastPage.drawText(`${field.label}：`, {
@@ -172,8 +183,9 @@ export async function fuseSignatureSheet(
           font: fontJp,
           color: textMuted,
         });
+        // Left-aligned value offset
         lastPage.drawText(val, {
-          x: colX + 85,
+          x: colX + 110,
           y: fieldY,
           size: 8.5,
           font: fontJp,
@@ -183,7 +195,7 @@ export async function fuseSignatureSheet(
       }
 
       if (!isTwoColumns) {
-        currentY = fieldY - 10;
+        currentY = fieldY - 8;
       }
     }
   } else {
@@ -328,7 +340,7 @@ export async function fuseSignatureSheet(
         color: textMuted,
       }
     );
-    newPage.drawText('SECURED WITH ML-DSA-65 / WEBAUTHN / ZERO-KNOWLEDGE PROTOCOL', {
+    newPage.drawText('SECURED WITH NIST ML-DSA-65 / WEBAUTHN / E2EE PROTOCOL', {
       x: margin,
       y: footerY - 4,
       size: 7,

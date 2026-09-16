@@ -79,6 +79,7 @@ export default function NewDocumentPage() {
   const [fusionConfig, setFusionConfig] = useState<SignatureFusionConfig>({
     enabled: true,
     placement: "inline_margin",
+    layoutMode: "stacked",
     inlineMarginOffset: 40,
     agreementDateType: "auto_on_sign",
     parties: [
@@ -571,6 +572,8 @@ export default function NewDocumentPage() {
         <SignatureSheetConfigurator
           config={fusionConfig}
           onChange={setFusionConfig}
+          pdfBytes={fileBytes}
+          docTitle={documentTitle}
         />
 
         {/* Creator & Multi-Signers Inputs */}
