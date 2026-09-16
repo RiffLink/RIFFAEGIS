@@ -63,45 +63,61 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
 
     // H1 Heading (# Heading)
     if (rawLine.startsWith('# ')) {
-      ensureSpace(40);
-      const text = rawLine.replace(/^#\s+/, '');
-      currentY -= 8;
+      ensureSpace(55);
+      const text = rawLine.replace(/^#\s+/, '').trim();
+      currentY -= 14;
+      const titleSize = 18;
+      const textWidth = fontJp.widthOfTextAtSize(text, titleSize);
+      const centerX = Math.max(margin, (pageWidth - textWidth) / 2);
+
+      // Centered Title (matching editor preview)
       currentPage.drawText(text, {
-        x: margin,
+        x: centerX,
         y: currentY,
-        size: 16,
+        size: titleSize,
         font: fontJp,
         color: rgb(0.08, 0.12, 0.22),
       });
-      currentY -= 24;
-      continue;
-    }
 
-    // H2 Heading (## Heading)
-    if (rawLine.startsWith('## ')) {
-      ensureSpace(30);
-      const text = stripMarkdownSyntax(rawLine.replace(/^##\s+/, ''));
-      currentY -= 6;
-      currentPage.drawText(text, {
-        x: margin,
-        y: currentY,
-        size: 12,
-        font: fontJp,
-        color: rgb(0.12, 0.2, 0.35),
+      currentY -= 12;
+      // Bottom divider line (matching editor preview border-b border-slate-300)
+      currentPage.drawLine({
+        start: { x: margin, y: currentY },
+        end: { x: pageWidth - margin, y: currentY },
+        thickness: 0.75,
+        color: rgb(0.8, 0.82, 0.86),
       });
-      currentY -= 18;
+
+      currentY -= 20;
       continue;
     }
 
-    // Article Header format like **第1条（...）** or 第1条...
-    if (/^\*\*第\d+条.*?\*\*$/.test(rawLine.trim()) || (/^第\d+条/.test(rawLine.trim()) && rawLine.length < 35)) {
-      ensureSpace(28);
-      const text = stripMarkdownSyntax(rawLine);
-      currentY -= 6;
-      currentPage.drawText(text, {
+    // H2 Heading (## Heading or Article title like **第1条...** or 第1条...)
+    if (
+      rawLine.startsWith('## ') ||
+      /^\*\*第\d+条.*?\*\*$/.test(rawLine.trim()) ||
+      (/^第\d+条/.test(rawLine.trim()) && rawLine.length < 35)
+    ) {
+      ensureSpace(34);
+      currentY -= 10;
+      let text = rawLine.replace(/^##\s+/, '').trim();
+      text = stripMarkdownSyntax(text);
+
+      const headingSize = 12;
+
+      // Draw blue vertical accent line (matching editor preview: border-l-3 border-[#0284c7])
+      currentPage.drawRectangle({
         x: margin,
+        y: currentY - 2,
+        width: 3,
+        height: headingSize + 2,
+        color: rgb(0.01, 0.52, 0.78),
+      });
+
+      currentPage.drawText(text, {
+        x: margin + 8,
         y: currentY,
-        size: 11,
+        size: headingSize,
         font: fontJp,
         color: rgb(0.08, 0.12, 0.22),
       });
@@ -158,10 +174,19 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
       continue;
     }
 
+    // Ordered / Numbered list item (e.g. 1. item, (1) item)
+    if (/^(\d+\.|\(\d+\))\s+/.test(rawLine.trim())) {
+      const text = stripMarkdownSyntax(rawLine.trim());
+      wrapAndDrawText(currentPage, text, margin + 12, contentWidth - 12, 9.5, fontJp, ensureSpace, (newY) => {
+        currentY = newY;
+      }, currentY);
+      continue;
+    }
+
     // List item (- item or * item)
     if (/^[-*]\s+/.test(rawLine)) {
       const text = stripMarkdownSyntax(rawLine.replace(/^[-*]\s+/, ''));
-      wrapAndDrawText(currentPage, `・ ${text}`, margin + 10, contentWidth - 10, 9, fontJp, ensureSpace, (newY) => {
+      wrapAndDrawText(currentPage, `・ ${text}`, margin + 12, contentWidth - 12, 9.5, fontJp, ensureSpace, (newY) => {
         currentY = newY;
       }, currentY);
       continue;
