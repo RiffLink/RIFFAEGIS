@@ -56,4 +56,23 @@ describe('Markdown Contract & Full Pipeline Suite', () => {
     // Should stay 1 page because it was fused inline in the bottom margin!
     expect(finalDoc.getPageCount()).toBe(1);
   });
+
+  it('should generate multi-page PDF cleanly when text exceeds single page', async () => {
+    // Generate long NDA contract markdown with **bold** article headings
+    const longMarkdown = Array.from({ length: 15 }, (_, i) => `
+**第${i + 1}条（秘密情報および遵守事項その${i + 1}）**
+
+1. 本条において定める秘密情報とは、甲及び乙が本合意に関連して相手方に開示するすべての営業上、技術上、開発上、財務上の情報（ソースコード、アルゴリズム、データベース構造、仕様書、画面遷移図、API仕様、顧客情報を含む）をいう。
+2. 受領者は、開示者の事前の書面による承諾なく、秘密情報を本目的以外のいかなる用途にも利用してはならず、また役員及び従業員以外の第三者に開示又は漏洩してはならない。
+`).join('\n');
+
+    const pdfBytes = await generatePdfFromMarkdown({
+      title: '秘密保持契約書（長文テスト）',
+      markdown: longMarkdown,
+    });
+
+    const doc = await PDFDocument.load(pdfBytes);
+    // Should span multiple pages due to content volume
+    expect(doc.getPageCount()).toBeGreaterThan(1);
+  });
 });

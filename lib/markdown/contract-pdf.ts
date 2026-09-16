@@ -8,6 +8,18 @@ export interface MarkdownContractOptions {
 }
 
 /**
+ * Strips inline markdown tokens (**bold**, *italic*, `code`) for clean PDF typesetting
+ */
+function stripMarkdownSyntax(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1');
+}
+
+/**
  * Generate clean A4 PDF bytes directly from Markdown contract text in the browser
  */
 export async function generatePdfFromMarkdown(options: MarkdownContractOptions): Promise<Uint8Array> {
@@ -68,7 +80,7 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
     // H2 Heading (## Heading)
     if (rawLine.startsWith('## ')) {
       ensureSpace(30);
-      const text = rawLine.replace(/^##\s+/, '');
+      const text = stripMarkdownSyntax(rawLine.replace(/^##\s+/, ''));
       currentY -= 6;
       currentPage.drawText(text, {
         x: margin,
@@ -81,10 +93,26 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
       continue;
     }
 
+    // Article Header format like **第1条（...）** or 第1条...
+    if (/^\*\*第\d+条.*?\*\*$/.test(rawLine.trim()) || (/^第\d+条/.test(rawLine.trim()) && rawLine.length < 35)) {
+      ensureSpace(28);
+      const text = stripMarkdownSyntax(rawLine);
+      currentY -= 6;
+      currentPage.drawText(text, {
+        x: margin,
+        y: currentY,
+        size: 11,
+        font: fontJp,
+        color: rgb(0.08, 0.12, 0.22),
+      });
+      currentY -= 16;
+      continue;
+    }
+
     // H3 Heading (### Heading)
     if (rawLine.startsWith('### ')) {
       ensureSpace(24);
-      const text = rawLine.replace(/^###\s+/, '');
+      const text = stripMarkdownSyntax(rawLine.replace(/^###\s+/, ''));
       currentY -= 4;
       currentPage.drawText(text, {
         x: margin,
@@ -99,7 +127,7 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
 
     // List item (- item or * item)
     if (/^[-*]\s+/.test(rawLine)) {
-      const text = rawLine.replace(/^[-*]\s+/, '');
+      const text = stripMarkdownSyntax(rawLine.replace(/^[-*]\s+/, ''));
       wrapAndDrawText(currentPage, `・ ${text}`, margin + 10, contentWidth - 10, 9, fontJp, ensureSpace, (newY) => {
         currentY = newY;
       }, currentY);
@@ -107,7 +135,7 @@ export async function generatePdfFromMarkdown(options: MarkdownContractOptions):
     }
 
     // Standard paragraph
-    wrapAndDrawText(currentPage, rawLine, margin, contentWidth, 9.5, fontJp, ensureSpace, (newY) => {
+    wrapAndDrawText(currentPage, stripMarkdownSyntax(rawLine), margin, contentWidth, 9.5, fontJp, ensureSpace, (newY) => {
       currentY = newY;
     }, currentY);
   }

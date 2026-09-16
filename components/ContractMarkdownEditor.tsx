@@ -23,6 +23,134 @@ interface Props {
   onPdfGenerated: (pdfBytes: Uint8Array, title: string) => void;
 }
 
+interface ContentBlock {
+  type: "h1" | "h2" | "h3" | "ul" | "ol" | "p" | "empty";
+  content: string;
+  linesCost: number;
+}
+
+/**
+ * Parses inline markdown: **bold**, *italic*, and strips unneeded syntax cleanly
+ */
+function renderInline(text: string): React.ReactNode {
+  const parts: (string | React.ReactNode)[] = [];
+  const regex = /(\*\*.*?\*\*|__.*?__|\*.*?\*|_.*?_)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (
+      (token.startsWith("**") && token.endsWith("**")) ||
+      (token.startsWith("__") && token.endsWith("__"))
+    ) {
+      parts.push(
+        <strong key={match.index} className="font-bold text-slate-950 font-sans">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (
+      (token.startsWith("*") && token.endsWith("*")) ||
+      (token.startsWith("_") && token.endsWith("_"))
+    ) {
+      parts.push(
+        <em key={match.index} className="italic text-slate-800">
+          {token.slice(1, -1)}
+        </em>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
+/**
+ * Categorize markdown lines into structured content blocks
+ */
+function parseBlocks(markdownText: string): ContentBlock[] {
+  const lines = markdownText.split("\n");
+  const blocks: ContentBlock[] = [];
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      blocks.push({ type: "empty", content: "", linesCost: 1 });
+      continue;
+    }
+    if (trimmed.startsWith("# ")) {
+      blocks.push({ type: "h1", content: trimmed.replace(/^#\s+/, ""), linesCost: 3.5 });
+      continue;
+    }
+    if (trimmed.startsWith("## ")) {
+      blocks.push({ type: "h2", content: trimmed.replace(/^##\s+/, ""), linesCost: 2.5 });
+      continue;
+    }
+    if (trimmed.startsWith("### ")) {
+      blocks.push({ type: "h3", content: trimmed.replace(/^###\s+/, ""), linesCost: 2 });
+      continue;
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
+      const text = trimmed.replace(/^[-*]\s+/, "");
+      const linesCost = Math.max(1, Math.ceil(text.length / 36));
+      blocks.push({ type: "ul", content: text, linesCost });
+      continue;
+    }
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const linesCost = Math.max(1, Math.ceil(trimmed.length / 36));
+      blocks.push({ type: "ol", content: trimmed, linesCost });
+      continue;
+    }
+    // Check if it's a bold section or article title like **第1条（...）**
+    if (/^\*\*第\d+条.*?\*\*$/.test(trimmed) || /^第\d+条/.test(trimmed)) {
+      blocks.push({ type: "h2", content: trimmed.replace(/\*\*/g, ""), linesCost: 2.2 });
+      continue;
+    }
+    // Normal paragraph
+    const linesCost = Math.max(1, Math.ceil(trimmed.length / 38));
+    blocks.push({ type: "p", content: trimmed, linesCost });
+  }
+
+  return blocks;
+}
+
+/**
+ * Paginate content blocks into standard A4 sheet capacities
+ */
+function paginateBlocks(blocks: ContentBlock[], docTitle: string): ContentBlock[][] {
+  const pages: ContentBlock[][] = [];
+  let currentPage: ContentBlock[] = [];
+  
+  // A4 sheet vertical capacity (in line cost units)
+  const FIRST_PAGE_LIMIT = 24;
+  const NORMAL_PAGE_LIMIT = 30;
+
+  let currentCapacity = FIRST_PAGE_LIMIT;
+  let currentUsed = 0;
+
+  for (const block of blocks) {
+    if (currentUsed + block.linesCost > currentCapacity && currentPage.length > 0) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentCapacity = NORMAL_PAGE_LIMIT;
+      currentUsed = 0;
+    }
+    currentPage.push(block);
+    currentUsed += block.linesCost;
+  }
+
+  if (currentPage.length > 0 || pages.length === 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
+}
+
 export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerated }: Props) {
   const [docTitle, setDocTitle] = useState<string>(initialTitle || "契約書");
   const [markdown, setMarkdown] = useState<string>(
@@ -225,71 +353,101 @@ export default function ContractMarkdownEditor({ initialTitle = "", onPdfGenerat
           />
         </div>
       ) : (
-        /* Preview Mode (A4 Sheet Simulation) */
+        /* Preview Mode (A4 Multi-Page Simulation) */
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-            <span>A4 用紙仕上がりプレビュー</span>
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-slate-700">A4 用紙仕上がりプレビュー</span>
+              <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-mono text-[10px]">
+                全 {paginateBlocks(parseBlocks(markdown), docTitle).length} ページ
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => setActiveView("edit")}
-              className="font-bold text-[#0284c7] hover:underline"
+              className="font-bold text-[#0284c7] hover:underline flex items-center space-x-1"
             >
-              編集に戻る
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>編集に戻る</span>
             </button>
           </div>
 
-          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[600px] shadow-inner flex justify-center">
-            <div className="w-full max-w-xl bg-white text-slate-900 rounded-xl p-8 sm:p-12 shadow-md font-serif text-xs sm:text-sm leading-relaxed space-y-4">
-              {/* Title (Rendered from docTitle or first # header) */}
-              <h1 className="text-xl sm:text-2xl font-bold text-center border-b border-slate-300 pb-3 text-slate-900 font-sans">
-                {docTitle || "契約書"}
-              </h1>
+          <div className="bg-slate-200/80 border border-slate-300/80 rounded-2xl p-4 sm:p-8 overflow-y-auto max-h-[750px] shadow-inner flex flex-col items-center space-y-6">
+            {paginateBlocks(parseBlocks(markdown), docTitle).map((pageBlocks, pageIdx, allPages) => (
+              <div
+                key={pageIdx}
+                className="w-full max-w-[620px] bg-white text-slate-900 rounded-sm p-8 sm:p-14 shadow-lg font-serif text-xs sm:text-sm leading-relaxed relative flex flex-col justify-between border border-slate-200/90"
+                style={{ minHeight: "877px" }}
+              >
+                <div className="space-y-3 flex-1">
+                  {/* Title rendered on First Page */}
+                  {pageIdx === 0 && (
+                    <div className="text-center border-b border-slate-300 pb-4 mb-6">
+                      <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-sans tracking-wide">
+                        {docTitle || "契約書"}
+                      </h1>
+                    </div>
+                  )}
 
-              {markdown
-                .split("\n")
-                .filter((l) => !l.startsWith("# "))
-                .map((line, idx) => {
-                  if (line.startsWith("## ")) {
+                  {pageBlocks.map((b, bIdx) => {
+                    if (b.type === "h1") {
+                      return (
+                        <h1 key={bIdx} className="text-lg sm:text-xl font-bold text-center border-b border-slate-300 pb-2 mb-3 text-slate-900 font-sans">
+                          {renderInline(b.content)}
+                        </h1>
+                      );
+                    }
+                    if (b.type === "h2") {
+                      return (
+                        <h2
+                          key={bIdx}
+                          className="text-sm sm:text-base font-bold mt-5 mb-2 text-slate-950 font-sans border-l-3 border-[#0284c7] pl-2.5"
+                        >
+                          {renderInline(b.content)}
+                        </h2>
+                      );
+                    }
+                    if (b.type === "h3") {
+                      return (
+                        <h3 key={bIdx} className="text-xs sm:text-sm font-bold mt-3 mb-1 text-slate-800 font-sans">
+                          {renderInline(b.content)}
+                        </h3>
+                      );
+                    }
+                    if (b.type === "ul") {
+                      return (
+                        <p key={bIdx} className="pl-4 text-slate-800 leading-relaxed">
+                          ・ {renderInline(b.content)}
+                        </p>
+                      );
+                    }
+                    if (b.type === "ol") {
+                      return (
+                        <p key={bIdx} className="pl-4 text-slate-800 leading-relaxed font-sans">
+                          {renderInline(b.content)}
+                        </p>
+                      );
+                    }
+                    if (b.type === "empty") {
+                      return <div key={bIdx} className="h-2" />;
+                    }
                     return (
-                      <h2
-                        key={idx}
-                        className="text-sm sm:text-base font-bold mt-4 text-slate-900 font-sans border-l-3 border-[#0284c7] pl-2"
-                      >
-                        {line.replace(/^##\s+/, "")}
-                      </h2>
-                    );
-                  }
-                  if (line.startsWith("### ")) {
-                    return (
-                      <h3 key={idx} className="text-xs sm:text-sm font-bold text-slate-800 font-sans">
-                        {line.replace(/^###\s+/, "")}
-                      </h3>
-                    );
-                  }
-                  if (/^[-*]\s+/.test(line)) {
-                    return (
-                      <p key={idx} className="pl-4 text-slate-800">
-                        ・ {line.replace(/^[-*]\s+/, "")}
+                      <p key={bIdx} className="text-slate-800 leading-relaxed text-justify">
+                        {renderInline(b.content)}
                       </p>
                     );
-                  }
-                  if (/^\d+\.\s+/.test(line)) {
-                    return (
-                      <p key={idx} className="pl-4 text-slate-800">
-                        {line}
-                      </p>
-                    );
-                  }
-                  if (!line.trim()) {
-                    return <div key={idx} className="h-1.5" />;
-                  }
-                  return (
-                    <p key={idx} className="text-slate-800">
-                      {line}
-                    </p>
-                  );
-                })}
-            </div>
+                  })}
+                </div>
+
+                {/* A4 Page Footer */}
+                <div className="pt-6 mt-6 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400 font-sans">
+                  <span>{docTitle || "電子契約書"}</span>
+                  <span className="font-mono">
+                    Page {pageIdx + 1} / {allPages.length}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
