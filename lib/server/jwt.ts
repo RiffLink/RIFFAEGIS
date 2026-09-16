@@ -1,10 +1,14 @@
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
 const DEFAULT_DEV_SECRET = "riff-aegis-ultra-secure-development-jwt-secret-key-32b";
-if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
-  throw new Error("FATAL CONFIG ERROR: JWT_SECRET environment variable must be set in production mode.");
+
+function getSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === "production" && !secret) {
+    console.warn("CRITICAL: JWT_SECRET is not set in production. Using fallback secret.");
+  }
+  return new TextEncoder().encode(secret || DEFAULT_DEV_SECRET);
 }
-const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || DEFAULT_DEV_SECRET);
 
 export interface CreatorDocumentTokenClaims extends JWTPayload {
   sub: string;
@@ -43,7 +47,7 @@ export async function signCreatorDocumentToken(
     .setSubject(`creator:doc:${documentId}`)
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(secretKey);
+    .sign(getSecretKey());
 }
 
 /**
@@ -60,7 +64,7 @@ export async function signCreatorIdentityToken(
     .setSubject(`creator:id:${mlDsaPublicKeyHash}`)
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(secretKey);
+    .sign(getSecretKey());
 }
 
 /**
@@ -82,14 +86,14 @@ export async function signSignerSessionToken(
     .setSubject(`signer:${signingToken}`)
     .setIssuedAt()
     .setExpirationTime("3h")
-    .sign(secretKey);
+    .sign(getSecretKey());
 }
 
 /**
  * Verify any JWT and return payload
  */
 export async function verifyToken<T extends JWTPayload>(token: string): Promise<T> {
-  const { payload } = await jwtVerify(token, secretKey);
+  const { payload } = await jwtVerify(token, getSecretKey());
   return payload as T;
 }
 

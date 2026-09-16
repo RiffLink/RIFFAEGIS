@@ -226,9 +226,31 @@ export default function SecurityArchitecturePage() {
             </div>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
               情報通信研究機構（NICT）日本標準時原子時計によるHTTP Date-Lock、Bitcoinブロックチェーンへの存在証明（OpenTimestamps）、
-              およびGitHub公開リポジトリへの監査ルート刻印の多重タイムスタンプを実施。
+              およびGitHub公開リポジトリ（
+              <a
+                href="https://github.com/RiffLink/riffaegis-anchors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-700 hover:text-amber-800 font-semibold underline underline-offset-2 inline-flex items-center space-x-0.5"
+              >
+                <span>RiffLink/riffaegis-anchors</span>
+                <ExternalLink className="w-3 h-3 inline-block" />
+              </a>
+              ）への監査ルート刻印の多重タイムスタンプを実施。
               将来、特定のサーバーやタイムスタンプ局が停止・倒産しても、グローバルな公開台帳によって契約日時の存在が証明され続けます。
             </p>
+            <div className="pt-2">
+              <a
+                href="https://github.com/RiffLink/riffaegis-anchors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100/80 text-amber-800 font-semibold text-xs transition-colors border border-amber-200/60"
+              >
+                <GithubIcon className="w-3.5 h-3.5" />
+                <span>公開監査台帳を見る (riffaegis-anchors)</span>
+                <ExternalLink className="w-3 h-3 text-amber-600" />
+              </a>
+            </div>
           </div>
         </div>
       </section>
