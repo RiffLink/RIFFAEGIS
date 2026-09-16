@@ -87,7 +87,7 @@ export async function fuseSignatureSheet(
   const agreementDateStr =
     config.agreementDateType === 'custom' && config.customAgreementDate
       ? config.customAgreementDate
-      : new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+      : '（電子署名完了時に確定）';
 
   const leadText =
     config.leadText ||

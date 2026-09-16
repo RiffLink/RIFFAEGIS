@@ -405,7 +405,7 @@ export default function SignatureSheetConfigurator({
                       : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                   }`}
                 >
-                  署名完了日に自動設定
+                  署名完了時に自動確定
                 </button>
                 <button
                   type="button"
@@ -419,6 +419,12 @@ export default function SignatureSheetConfigurator({
                   日付を指定（カレンダー）
                 </button>
               </div>
+
+              {config.agreementDateType === 'auto_on_sign' && (
+                <p className="text-[11px] text-slate-500 font-sans pt-1">
+                  💡 原本PDFには「締結日： （電子署名完了時に確定）」と印字されます。署名前の作成段階で今日の日付が勝手に記入されることはありません。全当事者の署名完了時に「合意締結証明書」へNICT日本標準時タイムスタンプが公式記録されます。
+                </p>
+              )}
             </div>
 
             {config.agreementDateType === 'custom' && (
@@ -798,7 +804,7 @@ export default function SignatureSheetConfigurator({
                         <p className="text-[11px] font-bold text-slate-900 pt-0.5">
                           契約締結日： {config.agreementDateType === 'custom' && config.customAgreementDate
                             ? config.customAgreementDate
-                            : '署名完了日に自動設定'}
+                            : '（電子署名完了時に確定）'}
                         </p>
                       </div>
 
