@@ -27,8 +27,8 @@ export async function loadJapaneseFont(): Promise<Uint8Array> {
     '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
   ];
   for (const fPath of fontCandidates) {
-    if (fs.existsSync(fPath)) {
-      return fs.readFileSync(fPath);
+    if (fs.existsSync(/*turbopackIgnore: true*/ fPath)) {
+      return fs.readFileSync(/*turbopackIgnore: true*/ fPath);
     }
   }
   throw new Error('No Japanese font found on server');
@@ -329,3 +329,6 @@ export async function fuseSignatureSheet(
 
   return await pdfDoc.save();
 }
+
+// Alias export for backward compatibility
+export const fuseSignatureSheetToPdf = fuseSignatureSheet;

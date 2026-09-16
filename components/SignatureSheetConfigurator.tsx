@@ -6,7 +6,7 @@ import {
   SignatureFusionConfig,
   SignaturePlacement,
 } from "@/lib/crypto/signature-types";
-import { fuseSignatureSheetToPdf } from "@/lib/crypto/signature-sheet";
+import { fuseSignatureSheet } from "@/lib/crypto/signature-sheet";
 import {
   Check,
   Plus,
@@ -131,8 +131,8 @@ export default function SignatureSheetConfigurator({
     if (!pdfBytes) return;
     setIsGeneratingRealPreview(true);
     try {
-      const fusedBytes = await fuseSignatureSheetToPdf(pdfBytes, config);
-      const blob = new Blob([fusedBytes], { type: "application/pdf" });
+      const fusedBytes = await fuseSignatureSheet(pdfBytes, config);
+      const blob = new Blob([fusedBytes as unknown as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       setRealPdfUrl(url);
       setShowRealPdfModal(true);

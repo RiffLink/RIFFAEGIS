@@ -18,8 +18,8 @@ export async function GET() {
 
   for (const fPath of fontCandidates) {
     try {
-      if (fs.existsSync(fPath)) {
-        const fontBuffer = fs.readFileSync(fPath);
+      if (fs.existsSync(/*turbopackIgnore: true*/ fPath)) {
+        const fontBuffer = fs.readFileSync(/*turbopackIgnore: true*/ fPath);
         return new NextResponse(fontBuffer, {
           status: 200,
           headers: {
