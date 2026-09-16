@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SignerField,
   SignatureFusionConfig,
@@ -23,6 +23,7 @@ import {
   FileText,
   Loader2,
   X,
+  FileSearch,
 } from "lucide-react";
 
 interface Props {
@@ -46,6 +47,42 @@ export default function SignatureSheetConfigurator({
   const [isGeneratingRealPreview, setIsGeneratingRealPreview] = useState<boolean>(false);
   const [realPdfUrl, setRealPdfUrl] = useState<string | null>(null);
   const [showRealPdfModal, setShowRealPdfModal] = useState<boolean>(false);
+  const [inlinePdfUrl, setInlinePdfUrl] = useState<string | null>(null);
+  const [isRenderingInlinePdf, setIsRenderingInlinePdf] = useState<boolean>(false);
+  const [previewTab, setPreviewTab] = useState<'real_pdf' | 'sheet_simulator'>('real_pdf');
+
+  // Auto-render real fused PDF when pdfBytes or config changes
+  useEffect(() => {
+    if (!pdfBytes) {
+      setInlinePdfUrl(null);
+      return;
+    }
+
+    let active = true;
+    setIsRenderingInlinePdf(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const fusedBytes = await fuseSignatureSheet(pdfBytes, config);
+        if (!active) return;
+        const blob = new Blob([fusedBytes as unknown as BlobPart], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        setInlinePdfUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch (err) {
+        console.error("Auto-render fused PDF error:", err);
+      } finally {
+        if (active) setIsRenderingInlinePdf(false);
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [pdfBytes, config]);
 
   const toggleEnabled = () => {
     onChange({ ...config, enabled: !config.enabled });
@@ -567,6 +604,35 @@ export default function SignatureSheetConfigurator({
                   <span>A4用紙 最終ページ・仕上がりプレビュー</span>
                 </span>
                 <div className="flex items-center flex-wrap gap-2">
+                  {pdfBytes && inlinePdfUrl && (
+                    <div className="flex items-center bg-white p-0.5 rounded-lg border border-slate-200 shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTab('real_pdf')}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all ${
+                          previewTab === 'real_pdf'
+                            ? 'bg-[#0284c7] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>実物PDFプレビュー</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTab('sheet_simulator')}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all ${
+                          previewTab === 'sheet_simulator'
+                            ? 'bg-[#0284c7] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <LayoutTemplate className="w-3.5 h-3.5" />
+                        <span>用紙シミュレーター</span>
+                      </button>
+                    </div>
+                  )}
+
                   <span className="text-[11px] font-bold text-[#0284c7] bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
                     {config.placement === 'inline_margin' ? '最終ページ下部に合成（1枚に集約）' : '末尾に新規1ページ付加'}
                   </span>
@@ -583,162 +649,195 @@ export default function SignatureSheetConfigurator({
                       {isGeneratingRealPreview ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0284c7]" />
                       ) : (
-                        <Eye className="w-3.5 h-3.5 text-[#0284c7]" />
+                        <ExternalLink className="w-3.5 h-3.5 text-[#0284c7]" />
                       )}
-                      <span>実寸PDFで合成確認</span>
+                      <span>全画面で確認</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* A4 Sheet Simulator */}
-              <div className="flex justify-center py-2">
-                <div
-                  className="w-full max-w-[620px] bg-white text-slate-900 rounded-lg p-6 sm:p-10 shadow-lg font-serif text-xs leading-relaxed relative flex flex-col justify-between border border-slate-300"
-                  style={{ minHeight: "680px" }}
-                >
-                  {/* Top: Actual Contract Content or PDF indicator */}
-                  <div className="space-y-2.5 pb-6 select-none border-b border-dashed border-slate-300">
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-sans">
-                      <span className="font-bold text-slate-600 truncate max-w-[280px]">
-                        {docTitle || "電子契約書"}（最終ページ本文）
+              {/* Real PDF Direct Viewer (When PDF is loaded and real_pdf tab selected) */}
+              {pdfBytes && inlinePdfUrl && previewTab === 'real_pdf' ? (
+                <div className="flex flex-col items-center py-2 space-y-2">
+                  <div className="w-full max-w-[660px] bg-white rounded-xl shadow-lg border border-slate-300 overflow-hidden relative">
+                    <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                      <span className="font-bold flex items-center gap-1.5 text-slate-800">
+                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                        <span>実際のPDFに署名欄を合成した仕上がり（実寸表示）</span>
                       </span>
-                      <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        {markdownContent ? "作成内容をリアルタイム反映中" : pdfBytes ? "アップロードPDF本文" : "契約本文シミュレーション"}
+                      <span className="text-[10px] font-mono text-slate-400">
+                        最終ページの本文と下部余白の配置を完全再現
                       </span>
                     </div>
+                    <div className="h-[680px] w-full bg-slate-100 relative">
+                      {isRenderingInlinePdf && (
+                        <div className="absolute inset-0 bg-white/70 backdrop-blur-2xs flex items-center justify-center z-10">
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-md border border-slate-200">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#0284c7]" />
+                            <span>PDFへ署名欄を再合成中...</span>
+                          </div>
+                        </div>
+                      )}
+                      <iframe
+                        src={`${inlinePdfUrl}#toolbar=0&navpanes=0`}
+                        className="w-full h-full border-0"
+                        title="Actual PDF Preview"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <span>💡 アップロードされた実際のPDFに署名欄が直接印字された状態です。余白や位置をそのまま目視できます。</span>
+                  </p>
+                </div>
+              ) : (
+                /* A4 Sheet Simulator (Exact contract ending articles & realistic vertical flow) */
+                <div className="flex justify-center py-2">
+                  <div
+                    className="w-full max-w-[620px] bg-white text-slate-900 rounded-lg p-6 sm:p-10 shadow-lg font-serif text-xs leading-relaxed relative border border-slate-300 flex flex-col justify-between"
+                    style={{ minHeight: "680px" }}
+                  >
+                    {/* Top: Actual Contract Content */}
+                    <div className="space-y-3 pb-5 select-none border-b border-dashed border-slate-300">
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-sans">
+                        <span className="font-bold text-slate-700 truncate max-w-[280px]">
+                          {docTitle || "プロジェクト参加合意書"}（最終ページ末尾）
+                        </span>
+                        <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          {markdownContent ? "エディタ内容を反映中" : "実際の契約書条文に準拠"}
+                        </span>
+                      </div>
 
-                    <div className="space-y-1.5 pt-1 text-slate-600 font-serif text-[11px] leading-relaxed">
-                      {(() => {
-                        const mdLines = getEndingMarkdownLines(markdownContent);
-                        if (mdLines && mdLines.length > 0) {
+                      <div className="space-y-2 pt-1 text-slate-700 font-serif text-[11px] leading-relaxed">
+                        {(() => {
+                          const mdLines = getEndingMarkdownLines(markdownContent);
+                          if (mdLines && mdLines.length > 0) {
+                            return (
+                              <>
+                                <p className="text-slate-400 text-[10px] font-sans italic">
+                                  …（前略：上記条文）…
+                                </p>
+                                {mdLines.map((line, idx) => {
+                                  const isHeading = line.startsWith("#");
+                                  const clean = line.replace(/^#+\s*/, "");
+                                  return isHeading ? (
+                                    <p key={idx} className="font-bold text-slate-900 text-xs mt-2 font-sans">
+                                      {clean}
+                                    </p>
+                                  ) : (
+                                    <p key={idx} className="text-slate-700">
+                                      {clean}
+                                    </p>
+                                  );
+                                })}
+                              </>
+                            );
+                          }
+
+                          // Realistic ending articles matching actual contracts (Project Agreement / NDA)
                           return (
                             <>
                               <p className="text-slate-400 text-[10px] font-sans italic">
-                                …（前略：上記条文）…
+                                …（前略：第1条〜第8条 本プロジェクト参加条件、知的財産権の帰属、秘密保持義務等）…
                               </p>
-                              {mdLines.map((line, idx) => {
-                                const isHeading = line.startsWith("#");
-                                const clean = line.replace(/^#+\s*/, "");
-                                return isHeading ? (
-                                  <p key={idx} className="font-bold text-slate-800 text-xs mt-2 font-sans">
-                                    {clean}
-                                  </p>
-                                ) : (
-                                  <p key={idx} className="text-slate-700">
-                                    {clean}
-                                  </p>
-                                );
-                              })}
+                              <div className="space-y-1 pt-1">
+                                <p className="font-bold text-slate-900 text-[11px] font-sans">
+                                  第9条（協議及び合意管轄）
+                                </p>
+                                <p className="text-slate-700 text-[11px] leading-relaxed">
+                                  1. 本合意に定めのない事項又は本合意の解釈に関して疑義が生じた場合は、甲乙互いに誠意をもって協議の上、円満に解決を図るものとする。
+                                </p>
+                                <p className="text-slate-700 text-[11px] leading-relaxed">
+                                  2. 本合意に関してやむを得ず紛争が生じた場合は、日本法を準拠法とし、甲の住所地を管轄する裁判所を第一審の専属的合意管轄裁判所とする。
+                                </p>
+                              </div>
+                              <p className="text-slate-700 text-[11px] leading-relaxed pt-1.5">
+                                本合意の成立を証するため、本書の電磁的記録（PDF原本）を作成し、甲及び乙がそれぞれ電磁的合意の意思表示を行う。
+                              </p>
                             </>
                           );
-                        }
-                        if (pdfBytes) {
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Bottom: Signature Fusion Block (Positioned naturally in bottom margin) */}
+                    <div className="pt-6 space-y-3">
+                      <div className="flex items-center justify-between text-[10px] font-sans text-slate-500 font-bold pb-1">
+                        <span className="flex items-center gap-1 text-[#0284c7]">
+                          <span>▼</span>
+                          <span>
+                            {config.placement === 'inline_margin'
+                              ? '最終ページ下部に合成される調印・署名欄'
+                              : '末尾に新規追加される専用調印シート'}
+                          </span>
+                        </span>
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          {config.placement === 'inline_margin'
+                            ? '✅ 下部余白に綺麗に収まります'
+                            : '📄 専用ページとして追加'}
+                        </span>
+                      </div>
+
+                      {/* Agreement Date & Confirmation lead */}
+                      <div className="space-y-1 text-slate-700 font-serif">
+                        <p className="text-[11px] leading-relaxed">
+                          {config.leadText || "本契約の成立を証するため、電磁的記録を作成し電子署名を施す。"}
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-900 pt-0.5">
+                          契約締結日： {config.agreementDateType === 'custom' && config.customAgreementDate
+                            ? config.customAgreementDate
+                            : '署名完了日に自動設定'}
+                        </p>
+                      </div>
+
+                      {/* Clean dividing line */}
+                      <div className="border-t border-slate-300 my-2" />
+
+                      {/* Parties: Clean typography, tight label-value gap, maximized width */}
+                      <div className={config.layoutMode === 'columns' ? "grid grid-cols-1 sm:grid-cols-2 gap-6" : "space-y-4"}>
+                        {config.parties.map((party, pIdx) => {
+                          const activeFields = party.fields.filter((f) => f.enabled);
                           return (
-                            <div className="py-3 px-4 bg-slate-50 rounded-lg border border-slate-200 font-sans space-y-1 text-center">
-                              <p className="font-bold text-slate-700 text-xs">
-                                📄 アップロードされたPDF：{docTitle || "契約書.pdf"}
-                              </p>
-                              <p className="text-slate-500 text-[11px]">
-                                PDFの最終ページ末尾の下部余白に、以下の署名ブロックが直接印字・結合されます。
-                              </p>
-                              <p className="text-[10px] text-[#0284c7]">
-                                ※ 上の「実寸PDFで合成確認」ボタンを押すと、実際のPDF最終ページに収まるか一目で確認できます。
-                              </p>
+                            <div key={pIdx} className="space-y-1.5">
+                              {/* Simple, authoritative contract header */}
+                              <div className="font-bold text-slate-900 text-xs font-sans pb-1 border-b border-slate-200 flex items-baseline gap-1.5">
+                                <span>【{party.roleName}】</span>
+                                <span className="text-slate-600 font-normal text-[11px]">
+                                  {party.roleDescription || (pIdx === 0 ? "作成者" : "署名者")}
+                                </span>
+                              </div>
+
+                              {/* Field rows: Label directly followed by value */}
+                              <div className="space-y-1 pt-0.5">
+                                {activeFields.length === 0 ? (
+                                  <p className="text-slate-400 italic text-[10px]">項目が選択されていません</p>
+                                ) : (
+                                  activeFields.map((f) => (
+                                    <div key={f.id} className="flex items-baseline text-[11px] leading-snug">
+                                      <span className="text-slate-500 font-medium shrink-0">
+                                        {f.label}：
+                                      </span>
+                                      <span className="font-semibold text-slate-900 pl-1.5 break-all flex-1">
+                                        {f.value || '（署名時に確認・入力）'}
+                                      </span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
                             </div>
                           );
-                        }
-                        return (
-                          <>
-                            <p className="text-slate-400 text-[10px]">
-                              …（前略：契約条文本文）…
-                            </p>
-                            <p className="text-slate-700">
-                              第10条（協議及び合意管轄） 本契約に関して生じた一切の紛争については、甲の住所地を管轄する地方裁判所又は簡易裁判所を第一審の専属的合意管轄裁判所とする。
-                            </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                        })}
+                      </div>
 
-                  {/* Bottom: Signature Fusion Block (Simple, Clean, Authentic Contract Style) */}
-                  <div className="pt-5 space-y-4">
-                    <div className="flex items-center justify-between text-[10px] font-sans text-[#0284c7] font-bold">
-                      <span className="flex items-center gap-1 text-slate-500">
-                        <span>▼</span>
-                        <span>
-                          {config.placement === 'inline_margin'
-                            ? '最終ページ下部に合成される署名欄'
-                            : '末尾に新規追加される専用調印シート'}
-                        </span>
-                      </span>
-                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        {config.placement === 'inline_margin'
-                          ? '✅ 下部余白に綺麗に収まります'
-                          : '📄 専用ページとして追加'}
-                      </span>
-                    </div>
-
-                    {/* Pre-amble Lead Text & Agreement Date */}
-                    <div className="space-y-1 text-slate-700 font-serif">
-                      <p className="text-[11px] leading-relaxed">
-                        {config.leadText || "本契約の成立を証するため、電磁的記録を作成し電子署名を施す。"}
-                      </p>
-                      <p className="text-[11px] font-bold text-slate-900 pt-0.5">
-                        {config.agreementDateType === 'custom' && config.customAgreementDate
-                          ? config.customAgreementDate
-                          : '契約締結日： 署名完了日に自動設定'}
-                      </p>
-                    </div>
-
-                    {/* Clean dividing line */}
-                    <div className="border-t border-slate-300 my-2" />
-
-                    {/* Parties: Clean typography, tight label-value gap, maximized width */}
-                    <div className={config.layoutMode === 'columns' ? "grid grid-cols-1 sm:grid-cols-2 gap-6" : "space-y-4"}>
-                      {config.parties.map((party, pIdx) => {
-                        const activeFields = party.fields.filter((f) => f.enabled);
-                        return (
-                          <div key={pIdx} className="space-y-1.5">
-                            {/* Simple, authoritative contract header */}
-                            <div className="font-bold text-slate-900 text-xs font-sans pb-1 border-b border-slate-200 flex items-baseline gap-1.5">
-                              <span>【{party.roleName}】</span>
-                              <span className="text-slate-600 font-normal text-[11px]">
-                                {party.roleDescription || (pIdx === 0 ? "作成者" : "署名者")}
-                              </span>
-                            </div>
-
-                            {/* Field rows: Label directly followed by value */}
-                            <div className="space-y-1 pt-0.5">
-                              {activeFields.length === 0 ? (
-                                <p className="text-slate-400 italic text-[10px]">項目が選択されていません</p>
-                              ) : (
-                                activeFields.map((f) => (
-                                  <div key={f.id} className="flex items-baseline text-[11px] leading-snug">
-                                    <span className="text-slate-500 font-medium shrink-0">
-                                      {f.label}：
-                                    </span>
-                                    <span className="font-semibold text-slate-900 pl-1.5 break-all flex-1">
-                                      {f.value || '（署名時に確認・入力）'}
-                                    </span>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Security & Verification watermark note */}
-                    <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-400 font-sans">
-                      <span>RiffAegis E2EE 電子合意署名ブロック</span>
-                      <span>耐量子暗号・NICT原子時計タイムスタンプ保護</span>
+                      {/* Security & Verification watermark note */}
+                      <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-400 font-sans">
+                        <span>RiffAegis E2EE 電子合意署名ブロック</span>
+                        <span>耐量子暗号・NICT原子時計タイムスタンプ保護</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -767,7 +866,7 @@ export default function SignatureSheetConfigurator({
                     <button
                       type="button"
                       onClick={() => setShowRealPdfModal(false)}
-                      className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/60 transition-colors"
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
                     >
                       <X className="w-5 h-5" />
                     </button>
