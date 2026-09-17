@@ -345,17 +345,7 @@ function ShareContent() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
-              <a
-                href={signingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold text-[#0284c7] hover:underline flex items-center space-x-1"
-              >
-                <span>相手方の署名画面をプレビュー</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100">
               <Link
                 href="/documents"
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors flex items-center justify-center space-x-1.5"

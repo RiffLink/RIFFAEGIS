@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/server/db";
 import { extractBearerToken, verifyToken, CreatorDocumentTokenClaims } from "@/lib/server/jwt";
-import { generateServerNonce, webauthnConfig } from "@/lib/server/webauthn";
+import { generateServerNonce, getWebAuthnConfig } from "@/lib/server/webauthn";
 import { createCreatorWebAuthnChallenge, bytesToBase64Url } from "@/lib/crypto/hashes";
 
 // In-memory challenge store for nonces during registration
@@ -71,21 +71,24 @@ export async function POST(
     const docShortId = id.slice(0, 8);
     const userName = `${creatorEmail} (${docShortId})`;
     const displayName = (meta.creator_name as string) || "Document Creator";
+    const cfg = getWebAuthnConfig(request);
 
     return NextResponse.json({
       challenge: challengeB64Url,
       rp: {
-        name: webauthnConfig.rpName,
-        id: webauthnConfig.rpID,
+        name: cfg.rpName,
+        id: cfg.rpID,
       },
       user: {
-        id: id,
+        id: Buffer.from(id).toString("base64url"),
         name: userName,
         displayName: displayName,
       },
       pubKeyCredParams: [
-        { alg: -7, type: "public-key" },  // ES256
+        { alg: -7, type: "public-key" },   // ES256 (Common for Touch ID / Face ID)
         { alg: -257, type: "public-key" }, // RS256
+        { alg: -8, type: "public-key" },   // Ed25519
+        { alg: -37, type: "public-key" },  // PS256
       ],
       authenticatorSelection: {
         userVerification: "preferred",

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/server/db";
 import { extractBearerToken, verifyToken, SignerSessionTokenClaims } from "@/lib/server/jwt";
 import { getLatestMerkleRoot } from "@/lib/server/merkle";
-import { generateServerNonce, webauthnConfig } from "@/lib/server/webauthn";
+import { generateServerNonce, getWebAuthnConfig } from "@/lib/server/webauthn";
 import { createSignerWebAuthnChallenge, bytesToBase64Url } from "@/lib/crypto/hashes";
 
 // In-memory challenge store for signer challenges
@@ -79,20 +79,24 @@ export async function POST(
       authenticatorSelection.authenticatorAttachment = "cross-platform";
     }
 
+    const cfg = getWebAuthnConfig(request);
+
     return NextResponse.json({
       challenge: challengeB64Url,
       rp: {
-        name: webauthnConfig.rpName,
-        id: webauthnConfig.rpID,
+        name: cfg.rpName,
+        id: cfg.rpID,
       },
       user: {
-        id: claims.signer_id,
+        id: Buffer.from(claims.signer_id).toString("base64url"),
         name: claims.email_verified,
         displayName: claims.email_verified,
       },
       pubKeyCredParams: [
-        { alg: -7, type: "public-key" },  // ES256
+        { alg: -7, type: "public-key" },   // ES256 (Common for Touch ID / Face ID)
         { alg: -257, type: "public-key" }, // RS256
+        { alg: -8, type: "public-key" },   // Ed25519
+        { alg: -37, type: "public-key" },  // PS256
       ],
       authenticatorSelection,
       timeout: 60000,

@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       userId: pkHash,
       userName: `creator-${pkHash.slice(0, 8)}`,
       userDisplayName: "RiffAegis Creator",
+      request,
     });
 
     rebindNonces.set(pkHash, {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (credential_response && expectedChallenge) {
       try {
-        const verification = await verifyWebAuthnRegistration(credential_response, expectedChallenge);
+        const verification = await verifyWebAuthnRegistration(credential_response, expectedChallenge, request);
         verified = verification.verified;
         if (verification.registrationInfo) {
           credentialId = verification.registrationInfo.credential.id;

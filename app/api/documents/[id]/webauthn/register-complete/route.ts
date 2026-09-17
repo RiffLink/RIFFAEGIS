@@ -73,7 +73,8 @@ export async function POST(
       try {
         const verification = await verifyWebAuthnRegistration(
           credential_response,
-          challengeB64Url
+          challengeB64Url,
+          request
         );
         verified = verification.verified;
         if (verification.registrationInfo) {
